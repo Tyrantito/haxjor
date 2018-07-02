@@ -5,3 +5,4 @@
 -Commands to adjust settings.
 -Allow the settings file for each script to provide easy modifications.
 -Add support for different unicodes (such as emojis, multiple languages [currently only english], etc)
+-Benchmarks for performance quality measures.
