@@ -23,7 +23,7 @@ import java.util.logging.Formatter;
 /**
  * HaxJor is a HaxBall specialized program that offers various of useful utilities
  * that may lead to an unfair advantage over the average user.
- * Some notable features that the differs the program from the rest are:
+ * Some notable features that differs the program from the rest are:
  * Avatar script, Reliable Auto-clicker & Marcos and more...
  * While all of the features are completely modifiable, the program ensures to be lightweight and consume close
  * to no system effort and thus ensure that your Haxball experience remains as smooth as possible.
