@@ -3,18 +3,24 @@ package major.haxjor.script.impl.avatar;
 import com.moandjiezana.toml.Toml;
 import major.haxjor.HaxJor;
 import major.haxjor.jnative.keyboard.Keyboard;
+import major.haxjor.jnative.keyboard.KeyboardInputListener;
 import major.haxjor.jnative.keyboard.KeyboardJNativeListener;
 import major.haxjor.script.HaxJorScript;
 
+import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 import static major.haxjor.HaxJor.LOGGER;
+import static major.haxjor.jnative.keyboard.Keyboard.HAXBALL_SPACE;
 
 /**
  * Avatar script for avatar effects.
@@ -25,9 +31,11 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
 
     //a mutable array of random avatar combinations. (this isn't apart of the design but rather a demonstration of avatar tests).
     private static final String[] random_avatars = {
-            "OoOoOoOoOoO",
+            "☺☻☺☻☺☻☺☻☺☻☺☻",
+            "OoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOo",
+            "GO0O0O0O0O0O0O0O0OAL!!Mj",
             "_eZe_Hj",
-            "I am a FU*KING BEAST",
+            " I" + HAXBALL_SPACE + "am" + HAXBALL_SPACE + "a" + HAXBALL_SPACE + "FU*KING" + HAXBALL_SPACE + "BEAST" + HAXBALL_SPACE + "Mj",
     };
 
     public AvatarHaxJorScript() {
@@ -62,6 +70,9 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
         return 'Q';
     }
 
+    //the clipboard context we've had before overwriting it.
+    private StringSelection previousClipboard;
+
     /**
      * The display effect for this avatar.
      */
@@ -79,7 +90,6 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
                     avatar(c);
                     pend(script.speed.milliseconds);
                 }
-                script.isRunning = false;
             }
         },
 
@@ -93,7 +103,7 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
                 final char[] chars = random_avatars[new Random().nextInt(random_avatars.length)].toCharArray().clone();
 
                 //write forward
-                for (int i = 0; i < chars.length; i++)  {
+                for (int i = 0; i < chars.length; i++) {
                     avatar(chars[i]);
                     pend(script.speed.milliseconds);
                 }
@@ -103,7 +113,6 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
                     avatar(chars[i]);
                     pend(script.speed.milliseconds);
                 }
-                script.isRunning = false;
             }
         },
 
@@ -131,7 +140,6 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
                         prevChar = nextChar;
                     }
                 }
-                script.isRunning = false;
             }
         },
 
@@ -160,8 +168,6 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                //this naturally only being called on end
-                script.isRunning = false;
             }
         };
 
@@ -181,15 +187,37 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
             System.out.println("We do avatar: " + Arrays.toString(chars));
             //starts by 'tabbing'
             Keyboard.type('\t');
-            //then write avatar and a space
+            //type avatar.
             Keyboard.type("/avatar ");
-            //now type the chars (TODO benchmark if its actually necessary to do the lazy check)
-            if (chars.length == 1)
-                Keyboard.type(chars[0]);
-            else
-                Keyboard.type(new String(chars));
+            //now copypaste the chars for this avatar
+            Keyboard.copyPaste(chars);
             //enter as we finish this avatar
             Keyboard.enter();
+        }
+
+        /**
+         * What happens before the effect starts.
+         */
+        void start(AvatarHaxJorScript script) {
+            //backup the current clipboard
+            try {
+                script.previousClipboard = new StringSelection(((String) Toolkit.getDefaultToolkit()
+                        .getSystemClipboard().getData(DataFlavor.stringFlavor)));
+            } catch (UnsupportedFlavorException | IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        /**
+         * What happens when this avatar script is finished.
+         */
+        void finish(AvatarHaxJorScript script) {
+            //restore the previous clipboard.
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            clipboard.setContents(script.previousClipboard, script.previousClipboard);
+
+            //indicate that we finished running this script.
+            script.isRunning = false;
         }
 
         /**
@@ -214,12 +242,12 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
 
     /**
      * The speed in milliseconds for this avatar.
-     *
+     * <p>
      * TODO find appropriate delays
      */
     private enum AvatarSpeed {
         SUPER_FAST(5),
-        FAST(75),
+        FAST(125),
         MEUM(15),
         SLOW(20),
         VERY_SLOW(50);
@@ -253,10 +281,6 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
 
     @Override
     public final boolean execute() {
-        if (!enabled()) {
-            LOGGER.info("Script is disabled.");
-            return false;
-        }
         if (isRunning) {
             LOGGER.info("Already running. Action not queued.");
             return false;
@@ -275,12 +299,16 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
 //        }
         isRunning = true;
         try {
-            HaxJor.SCRIPT_EXECUTOR.submit(() -> effect.onEffect(this)).get();//#get should block this thread until completion to avoid concurrent operations.
+            HaxJor.SCRIPT_EXECUTOR.submit(() -> {
+                effect.start(this);
+                effect.onEffect(this);
+                effect.finish(this);
+            }).get();//#get should block this thread until completion to avoid concurrent operations.
         } catch (InterruptedException | ExecutionException e) {
             System.out.println("should be blocking until its done.");
             e.printStackTrace();
         }
-        System.out.println("this called once the task done.");
+        System.out.println("this called once the task done. " + KeyboardInputListener.firingEvents);
         return true;
     }
 

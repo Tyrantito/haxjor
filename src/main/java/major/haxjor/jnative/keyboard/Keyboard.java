@@ -1,6 +1,9 @@
 package major.haxjor.jnative.keyboard;
 
 import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
+import java.awt.event.KeyEvent;
 
 import static java.awt.event.KeyEvent.*;
 
@@ -13,6 +16,11 @@ import static java.awt.event.KeyEvent.*;
 public class Keyboard {
 
     private static final Robot ROBOT = create();
+
+    /**
+     * The character that acts as a space-bar in Haxball avatar. (Alt + 255)
+     */
+    public static final char HAXBALL_SPACE = ' ';
 
     /**
      * Static method to create a {@link Robot} instance while
@@ -36,6 +44,24 @@ public class Keyboard {
             char character = characters.charAt(i);
             type(character);
         }
+    }
+
+    /**
+     * Copy paste the chars.
+     * <p>
+     * Note: this keeps a backup of your current clipboard, overwrite it, and then reverse it.
+     *
+     * @param chars
+     */
+    public static synchronized void copyPaste(char... chars) {
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        StringSelection stringSelection = new StringSelection(new String(chars));
+        clipboard.setContents(stringSelection, stringSelection);
+        ROBOT.keyPress(KeyEvent.VK_CONTROL);
+        ROBOT.keyPress(KeyEvent.VK_V);
+        ROBOT.keyRelease(KeyEvent.VK_V);
+        ROBOT.keyRelease(KeyEvent.VK_CONTROL);
+
     }
 
     //shortcut to 'enter' key press
@@ -359,7 +385,6 @@ public class Keyboard {
         if (length == 0) {
             return;
         }
-
         ROBOT.keyPress(keyCodes[offset]);
         doType(keyCodes, offset + 1, length - 1);
         ROBOT.keyRelease(keyCodes[offset]);

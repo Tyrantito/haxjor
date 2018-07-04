@@ -163,6 +163,7 @@ public final class HaxJor {
     //load scripts using reflections.
     private static void loadScripts() {
         Set<Class<? extends HaxJorScript>> scripts = new Reflections(SCRIPTS_IMPL_DIRECTORY).getSubTypesOf(HaxJorScript.class);//.getSubTypesOf(HaxJorScript.class);
+
         System.out.println(scripts.size() + " scripts found.");
         for (Class<? extends HaxJorScript> script : scripts) {
             try {
