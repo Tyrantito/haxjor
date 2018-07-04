@@ -11,6 +11,8 @@ import static java.awt.event.KeyEvent.*;
  * Controls keyboard pressing actions only.
  *
  * @author Major (Compatibility adjustments)
+ * @author Style (C&P suggestion & function)
+ *
  * @see <a href="https://stackoverflow.com/a/11779211">Credits for original author</a>
  */
 public class Keyboard {

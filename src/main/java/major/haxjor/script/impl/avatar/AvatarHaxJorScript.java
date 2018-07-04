@@ -20,20 +20,30 @@ import static major.haxjor.HaxJor.LOGGER;
  */
 public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener {
 
+    /**
+     * The char(s) for our default avatar.
+     */
+    static final char[] DEFAULT_AVATAR = {'M', 'j'};
+
+    /**
+     * Temporary default constructor TODO load this through settings file
+     */
     public AvatarHaxJorScript() {
         //some default avatar.
-        avatars = "oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOo".toCharArray();
+        combination = AvatarCombination.SMILES;
         effect = AvatarEffect.CHAIN;
         speed = AvatarSpeed.FAST;
     }
 
-
-    private char[] avatars;
+    private AvatarCombination combination;
     private AvatarEffect effect;
     private AvatarSpeed speed;
 
-    public final char[] getAvatars() {
-        return avatars;
+    //should we set our avatar to default when effect is completed?
+    private boolean restoreToDefault = true;
+
+    public final AvatarCombination getAvatarCombination() {
+        return combination;
     }
 
     public final AvatarSpeed getSpeed() {
@@ -75,15 +85,15 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
     }
 
     @Override
-    public final boolean execute() {
+    public final void execute() {
         if (isRunning) {
             LOGGER.info("Already running. Action not queued.");
-            return false;
+            return;
         }
         if (effect == null) {
             LOGGER.info("No effect selected.");
             //OR: use default effect
-            return false;
+            return;
         }
 
         //currently testing jnativekeyboard reaction, thus we do not really need the whole functionality of this method but rather
@@ -104,7 +114,6 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
             e.printStackTrace();
         }
         System.out.println("this called once the task done. " + KeyboardInputListener.firingEvents);
-        return true;
     }
 
     @Override
@@ -114,5 +123,9 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
 
     final void setRunning(boolean isRunning) {
         this.isRunning = isRunning;
+    }
+
+    public boolean isRestoreToDefault() {
+        return restoreToDefault;
     }
 }

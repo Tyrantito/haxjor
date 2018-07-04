@@ -8,12 +8,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Toggle the availability of keyboard-related scripts.
+ *
  * @author Major
  */
 public class ToggleKeyboardHaxJorScript implements HaxJorScript, KeyboardJNativeListener {
 
     //the toggle state of keyboard scripts.
     public static final AtomicBoolean toggle = new AtomicBoolean(true);
+
     @Override
     public Path settings() {
         return null;
@@ -27,10 +29,9 @@ public class ToggleKeyboardHaxJorScript implements HaxJorScript, KeyboardJNative
     }
 
     @Override
-    public boolean execute() {
+    public void execute() {
         //toggle keyboard scripts
         toggle.set(!toggle.get());
-        return true;
     }
 
     //this is always enabled, because its a toggle and when its disabled it has to still work so it can be enabled.

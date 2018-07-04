@@ -2,13 +2,10 @@ package major.haxjor.script.impl.avatar;
 
 import major.haxjor.jnative.keyboard.Keyboard;
 
-import java.util.Arrays;
-import java.util.Random;
-
-import static major.haxjor.jnative.keyboard.Keyboard.HAXBALL_SPACE;
-
 /**
  * The display effect for this avatar.
+ *
+ * @author Major
  */
 public enum AvatarEffect {
 
@@ -18,11 +15,15 @@ public enum AvatarEffect {
     SOLO() {
         @Override
         public final void onEffect(AvatarHaxJorScript script) {
-            final char[] chars = random_avatars[new Random().nextInt(random_avatars.length)].toCharArray().clone();
+            final char[] chars = script.getAvatarCombination().getChars().clone();
 
-            for (char c : chars) {
-                avatar(c);
-                pend(script.getSpeed().getMilliseconds());
+            final int delay = script.getAvatarCombination().getMilliseconds() != 0 ? script.getAvatarCombination().getMilliseconds() : script.getSpeed().getMilliseconds();
+
+            for (int repeat = 0; repeat < 1 + script.getAvatarCombination().getRepeat(); repeat++) {
+                for (char c : chars) {
+                    avatar(c);
+                    pend(delay);
+                }
             }
         }
     },
@@ -33,19 +34,21 @@ public enum AvatarEffect {
     SOLO_REVERSAL {
         @Override
         public final void onEffect(AvatarHaxJorScript script) {
-            //TODO temp.
-            final char[] chars = random_avatars[new Random().nextInt(random_avatars.length)].toCharArray().clone();
+            final char[] chars = script.getAvatarCombination().getChars().clone();
+            final int delay = script.getAvatarCombination().getMilliseconds() != 0 ? script.getAvatarCombination().getMilliseconds() : script.getSpeed().getMilliseconds();
 
-            //write forward
-            for (int i = 0; i < chars.length; i++) {
-                avatar(chars[i]);
-                pend(script.getSpeed().getMilliseconds());
-            }
+            for (int repeat = 0; repeat < 1 + script.getAvatarCombination().getRepeat(); repeat++) {
+                //write forward
+                for (char aChar : chars) {
+                    avatar(aChar);
+                    pend(delay);
+                }
 
-            //write backward
-            for (int i = chars.length - 1; i >= 0; i--) {
-                avatar(chars[i]);
-                pend(script.getSpeed().getMilliseconds());
+                //write backward
+                for (int i = chars.length - 1; i >= 0; i--) {
+                    avatar(chars[i]);
+                    pend(delay);
+                }
             }
         }
     },
@@ -57,21 +60,24 @@ public enum AvatarEffect {
         @Override
         public final void onEffect(AvatarHaxJorScript script) {
             //get the copy of chars to write [should it be a clone?] (a random avatar)
-            final char[] chars = random_avatars[new Random().nextInt(random_avatars.length)].toCharArray().clone();
+            final char[] chars = script.getAvatarCombination().getChars().clone();
+            final int delay = script.getAvatarCombination().getMilliseconds() != 0 ? script.getAvatarCombination().getMilliseconds() : script.getSpeed().getMilliseconds();
 
             char prevChar = 0; //id of char
             char nextChar; //id of char
 
-            for (int index = 0; index < chars.length; index++) {
-                if (index == 0) {
-                    prevChar = chars[index];
-                    avatar(prevChar);
-                    pend(script.getSpeed().getMilliseconds());
-                } else {
-                    nextChar = chars[index];
-                    avatar(prevChar, nextChar);
-                    pend(script.getSpeed().getMilliseconds());
-                    prevChar = nextChar;
+            for (int repeat = 0; repeat < 1 + script.getAvatarCombination().getRepeat(); repeat++) {
+                for (int index = 0; index < chars.length; index++) {
+                    if (index == 0) {
+                        prevChar = chars[index];
+                        avatar(prevChar);
+                        pend(delay);
+                    } else {
+                        nextChar = chars[index];
+                        avatar(prevChar, nextChar);
+                        pend(delay);
+                        prevChar = nextChar;
+                    }
                 }
             }
         }
@@ -83,41 +89,25 @@ public enum AvatarEffect {
     COUNTER {
         @Override
         public void onEffect(AvatarHaxJorScript script) {
-            try {
-                //lol some shit way (made for loomani :D)
-                for (int i = 0; i < 100; i++) {
-                    if (i < 10)
-                        avatar(Integer.toString(i).charAt(0));
-                    else
-                        avatar(Integer.toString(i).charAt(0), Integer.toString(i).charAt(1));
-                    pend(script.getSpeed().getMilliseconds());
-                }
-                for (int i = 100; i > 0; i--) {
-                    if (i < 10)
-                        avatar(Integer.toString(i).charAt(0));
-                    else
-                        avatar(Integer.toString(i).charAt(0), Integer.toString(i).charAt(1));
-                    pend(script.getSpeed().getMilliseconds());
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+            final int delay = script.getAvatarCombination().getMilliseconds() != 0 ? script.getAvatarCombination().getMilliseconds() : script.getSpeed().getMilliseconds();
+
+            //lol some shit way (made for loomani :D)
+            for (int i = 0; i < 100; i++) {
+                if (i < 10)
+                    avatar(Integer.toString(i).charAt(0));
+                else
+                    avatar(Integer.toString(i).charAt(0), Integer.toString(i).charAt(1));
+                pend(delay);
+            }
+            for (int i = 100; i > 0; i--) {
+                if (i < 10)
+                    avatar(Integer.toString(i).charAt(0));
+                else
+                    avatar(Integer.toString(i).charAt(0), Integer.toString(i).charAt(1));
+                pend(delay);
             }
         }
     };
-
-    //a mutable array of random avatar combinations. (this isn't apart of the design but rather a demonstration of avatar tests).
-    private static final String[] random_avatars = {
-            "☺☻☺☻☺☻☺☻☺☻☺☻",
-            "OoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOo",
-            "GO0O0O0O0O0O0O0O0OAL!!Mj",
-            "_eZe_Hj",
-            " I" + HAXBALL_SPACE + "am" + HAXBALL_SPACE + "a" + HAXBALL_SPACE + "FU*KING" + HAXBALL_SPACE + "BEAST" + HAXBALL_SPACE + "Mj",
-    };
-
-    /**
-     * The random instance
-     */
-    private static final Random RANDOM = new Random();
 
     /**
      * What happens when the effect is called.
@@ -131,7 +121,7 @@ public enum AvatarEffect {
      *
      * @param chars the characters to write on this avatar.
      */
-    synchronized void avatar(char... chars) {
+    final synchronized void avatar(char... chars) {
 //        System.out.println("We do avatar: " + Arrays.toString(chars));
         //starts by 'tabbing'
         Keyboard.type('\t');
@@ -164,6 +154,10 @@ public enum AvatarEffect {
 //            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
 //            clipboard.setContents(script.previousClipboard, script.previousClipboard);
 
+        //should we restore avatar to default on end?
+        if (script.isRestoreToDefault()) {
+            avatar(AvatarHaxJorScript.DEFAULT_AVATAR);
+        }
         //indicate that we finished running this script.
         script.setRunning(false);
     }
@@ -177,7 +171,7 @@ public enum AvatarEffect {
      *
      * @param ms the milliseconds to 'delay' for.
      */
-    synchronized void pend(int ms) {
+    final synchronized void pend(int ms) {
         try {
 //            System.out.println("Pending for: " + ms + "ms");
             Thread.sleep(ms);

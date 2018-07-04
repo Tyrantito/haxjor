@@ -36,8 +36,8 @@ import java.util.logging.Formatter;
  * to create different kind of key loggers and various native traces using jnative. Please act in cautious.
  *
  * @author Major - A.K.A Guy
- * @version 1.0
- * @since 24-June-2016
+ * @version 1.2
+ * @since 24-June-2018
  */
 public final class HaxJor {
 
@@ -60,7 +60,7 @@ public final class HaxJor {
     private static final KeyboardInputListener KEYBOARD_INPUT_LISTENER = new KeyboardInputListener();
 
     /**
-     * The scripts for a listener. unsafe types.
+     * The set of scripts. //TODO doesn't have to be multiset
      */
     public static final Multiset<HaxJorScript> SCRIPTS = HashMultiset.create();
 
@@ -163,22 +163,24 @@ public final class HaxJor {
     //load scripts using reflections.
     private static void loadScripts() {
         Set<Class<? extends HaxJorScript>> scripts = new Reflections(SCRIPTS_IMPL_DIRECTORY).getSubTypesOf(HaxJorScript.class);//.getSubTypesOf(HaxJorScript.class);
-
-        System.out.println(scripts.size() + " scripts found.");
+        LOGGER.info("" + scripts.size() + " are about to be loaded...");
+        int success = 0;
         for (Class<? extends HaxJorScript> script : scripts) {
             try {
+                //create a new instance of the script
                 HaxJorScript haxJorScript = script.getDeclaredConstructor().newInstance();
+                //initialize the script
                 haxJorScript.initialize();
                 //cache the script
                 SCRIPTS.add(haxJorScript);
-
-                //debug
-                System.out.println("added: " + script.getName());
-                System.out.println("listeners: " + Arrays.toString(script.getInterfaces()));
+                //count successful scripts loaded
+                success++;
             } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                 e.printStackTrace();
             }
         }
+
+        LOGGER.info("Successfully loaded " + success + "/" + scripts.size() + " scripts.");
     }
 
     //imported: NativeHookDemo.class

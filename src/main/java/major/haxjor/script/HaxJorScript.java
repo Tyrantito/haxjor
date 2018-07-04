@@ -27,7 +27,7 @@ public interface HaxJorScript {
     /**
      * The action that is executed when the script is triggered.
      */
-    boolean execute();
+    void execute();
 
     /**
      * Is this script enabled? Allows easy toggling for features.
