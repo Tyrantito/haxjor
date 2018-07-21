@@ -3,20 +3,26 @@ package major.haxjor;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.moandjiezana.toml.Toml;
+import com.moandjiezana.toml.TomlWriter;
 import major.haxjor.jnative.keyboard.KeyboardInputListener;
 import major.haxjor.jnative.keyboard.KeyboardJNativeListener;
 import major.haxjor.script.HaxJorScript;
+import major.haxjor.script.impl.ToggleKeyboardHaxJorScript;
 import org.jnativehook.GlobalScreen;
 import org.jnativehook.NativeHookException;
 import org.reflections.Reflections;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.*;
 import java.util.logging.Formatter;
 
@@ -49,7 +55,7 @@ public final class HaxJor {
     /**
      * The logger for global screen jnative
      */
-    public static final Logger JNATIVE_LOGGER = Logger.getLogger(GlobalScreen.class.getPackage().getName());
+    private static final Logger JNATIVE_LOGGER = Logger.getLogger(GlobalScreen.class.getPackage().getName());
 
     /**
      * Some static settings for the system.
@@ -62,7 +68,7 @@ public final class HaxJor {
     /**
      * The set of scripts. //TODO doesn't have to be multiset
      */
-    public static final Multiset<HaxJorScript> SCRIPTS = HashMultiset.create();
+    private static final Multiset<HaxJorScript> SCRIPTS = HashMultiset.create();
 
     /**
      * A cached map of scripts that implement a keyboard listener {@link KeyboardJNativeListener} and
@@ -72,9 +78,8 @@ public final class HaxJor {
 
     /**
      * The path for scripts
-     * TODO {@link java.nio.file.Path}
      */
-    private static final String SCRIPTS_IMPL_DIRECTORY = "major.haxjor.script.impl";
+    private static final Path SCRIPTS_IMPL_DIRECTORY = Paths.get("major.haxjor.script.impl");
 
     /**
      * The executor to concurrently handle scripts.
@@ -106,7 +111,6 @@ public final class HaxJor {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             //the abnormal behavior when the program is shutdown.
             shutdown(false);
-
             try {
                 //wait for the working threads to finalize (finish!)
                 currentThread.join();
@@ -118,7 +122,6 @@ public final class HaxJor {
         LOGGER.info("Loading utilities...");
         loadSettings();
         loadScripts();
-
 
         //command system
         final Scanner input = new Scanner(System.in);
@@ -133,8 +136,59 @@ public final class HaxJor {
         }
     }
 
+    //are we currently running any script?
+    public static boolean firingEvents;
+
+    //queue of pending scripts.
+    private static final Queue<HaxJorScript> SCRIPT_QUEUE = new ArrayDeque<>();
+
+    //some settings
+    public static boolean debugMessages;
+    public static boolean scriptQueue;
+
+    /**
+     * Private, non-instanceable class.
+     */
+    private HaxJor() {
+        throw new UnsupportedOperationException("Class may not be instanced.");
+    }
+
+    //attempt to run the script, and then handle the queue.
+    public static void runScript(HaxJorScript script) {
+        //are we running a script atm?
+        if (firingEvents) {
+            LOGGER.info("Queued action instead: " + script.getClass().getSimpleName());
+            SCRIPT_QUEUE.add(script);
+            return;
+        }
+
+        //is the script enabled?
+        if (!script.enabled()) {
+            LOGGER.info("Script is disabled.");
+            return;
+        }
+
+        firingEvents = true;
+        script.execute();
+        firingEvents = false;
+
+        if (!SCRIPT_QUEUE.isEmpty()) {
+            runScript(SCRIPT_QUEUE.poll());
+            LOGGER.info("Running script from queue...");
+        }
+//        System.out.println("Disabled.");
+    }
+
+    /**
+     * The necessary actions to ensure safe shutdown of the program.
+     * Must unregister all native hooks.
+     *
+     * @param natural did the program shutdown in a natural way or due to a system failure.
+     */
     public static void shutdown(boolean natural) {
         try {
+            System.out.println("Shutting down Haxjor... (behavior: " + (natural ? "natural" : "unnatural") + ")");
+
             //what happens when the program unnaturally shutdowns (i.e exception)
             if (!natural) {
 
@@ -151,20 +205,24 @@ public final class HaxJor {
         }
     }
 
-    private HaxJor() {
-        throw new UnsupportedOperationException("Class may not be instanced.");
-    }
-
-    //TODO introduce settings
+    /**
+     * TODO find a better way rather than those variables...
+     */
     private static void loadSettings() {
+        long start = System.nanoTime();
+        scriptQueue = TOML_PARSER.getBoolean("config.script_queue");
+        debugMessages = TOML_PARSER.getBoolean("config.debug_messages");
 
+        LOGGER.info("General settings has been loaded in " + elapsedMs(start) + "ms");
     }
 
     //load scripts using reflections.
     private static void loadScripts() {
-        Set<Class<? extends HaxJorScript>> scripts = new Reflections(SCRIPTS_IMPL_DIRECTORY).getSubTypesOf(HaxJorScript.class);//.getSubTypesOf(HaxJorScript.class);
+        Set<Class<? extends HaxJorScript>> scripts = new Reflections(SCRIPTS_IMPL_DIRECTORY.toString()).getSubTypesOf(HaxJorScript.class);
         LOGGER.info("" + scripts.size() + " are about to be loaded...");
+
         int success = 0;
+        long startNano = System.nanoTime();
         for (Class<? extends HaxJorScript> script : scripts) {
             try {
                 //create a new instance of the script
@@ -180,11 +238,22 @@ public final class HaxJor {
             }
         }
 
-        LOGGER.info("Successfully loaded " + success + "/" + scripts.size() + " scripts.");
+        LOGGER.info("Successfully loaded " + success + "/" + scripts.size() + " scripts in " + elapsedMs(startNano) + "ms.");
+    }
+
+    /**
+     * A method for calculating elapsed milliseconds by nanoseconds, converted using {@link TimeUnit}.
+     *
+     * @param startNano the nanoseconds on the start.
+     * @return elapsed milliseconds since startNano
+     */
+    private static long elapsedMs(long startNano) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNano);
     }
 
     //imported: NativeHookDemo.class
     private static final class LogFormatter extends Formatter {
+
         private LogFormatter() {
         }
 
@@ -206,5 +275,4 @@ public final class HaxJor {
             return var2.toString();
         }
     }
-
 }

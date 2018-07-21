@@ -1,1 +1,6 @@
-#TODO create settings
+[general]
+ authors = [ "Major" ] #Read only
+
+[config]
+ debug_messages = true
+ script_queue = true

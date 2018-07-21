@@ -21,7 +21,7 @@ import static major.haxjor.HaxJor.LOGGER;
 public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener {
 
     /**
-     * The char(s) for our default avatar.
+     * The char(s) for our default avatar. {max chars = 2}
      */
     static final char[] DEFAULT_AVATAR = {'M', 'j'};
 
@@ -110,10 +110,10 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
                 effect.finish(this);
             }).get();//#get should block this thread until completion to avoid concurrent operations.
         } catch (InterruptedException | ExecutionException e) {
-            System.out.println("should be blocking until its done.");
+            System.out.println("script blocking has been interrupted.");
             e.printStackTrace();
         }
-        System.out.println("this called once the task done. " + KeyboardInputListener.firingEvents);
+        System.out.println("this called once the task done. " + HaxJor.firingEvents);
     }
 
     @Override
@@ -125,7 +125,7 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
         this.isRunning = isRunning;
     }
 
-    public boolean isRestoreToDefault() {
+    public final boolean isRestoreToDefault() {
         return restoreToDefault;
     }
 }

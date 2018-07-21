@@ -16,7 +16,6 @@ public class ToggleKeyboardHaxJorScript implements HaxJorScript, KeyboardJNative
     //the toggle state of keyboard scripts.
     public static final AtomicBoolean toggle = new AtomicBoolean(true);
 
-    @Override
     public Path settings() {
         return null;
     }

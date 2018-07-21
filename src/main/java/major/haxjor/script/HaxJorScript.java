@@ -33,4 +33,5 @@ public interface HaxJorScript {
      * Is this script enabled? Allows easy toggling for features.
      */
     boolean enabled();
+
 }
