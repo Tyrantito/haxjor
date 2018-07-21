@@ -7,3 +7,5 @@
 -Allow the settings file for each script to provide easy modifications.
 -Benchmarks for performance quality measures.
 -Figure how to set keyboard language when #type is called.
+-Currently, exiting the program happens so we relay on the shutdown hook event since when #system.exit() is called,
+ it also calls the shutdown event, and to demonstrate whether its a natural exit or unexpected one we set a flag depending on the state.

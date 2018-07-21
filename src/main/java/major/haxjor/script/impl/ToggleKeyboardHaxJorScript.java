@@ -11,14 +11,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author Major
  */
+@HaxJorScript.HaxJorSettings(settingsFile = "toggle_script.toml")
 public class ToggleKeyboardHaxJorScript implements HaxJorScript, KeyboardJNativeListener {
 
     //the toggle state of keyboard scripts.
-    public static final AtomicBoolean toggle = new AtomicBoolean(true);
+    public static final AtomicBoolean toggle = new AtomicBoolean(false);
 
-    public Path settings() {
-        return null;
-    }
 
     @Override
     public void initialize() {

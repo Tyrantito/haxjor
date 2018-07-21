@@ -31,7 +31,7 @@ import java.util.logging.Formatter;
  * that may lead to an unfair advantage over the average user.
  * Some notable features that differs the program from the rest are:
  * Avatar script, Reliable Auto-clicker & Marcos and more...
- * While all of the features are completely modifiable, the program ensures to be lightweight and consume close
+ * While all of the features are completely modifiable, the program also ensures to be lightweight and consume close
  * to no system effort and thus ensure that your Haxball experience remains as smooth as possible.
  * <p>
  *
@@ -82,9 +82,14 @@ public final class HaxJor {
     private static final Path SCRIPTS_IMPL_DIRECTORY = Paths.get("major.haxjor.script.impl");
 
     /**
-     * The executor to concurrently handle scripts.
+     * The executor to concurrently but synchronously handle scripts.
      */
     public static final ScheduledExecutorService SCRIPT_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
+
+    /**
+     * We always shutdown unnaturally unless when its meant to happen we change this to true.
+     */
+    private static boolean shutdownNaturally = false;
 
     /**
      * Infinity.
@@ -110,7 +115,8 @@ public final class HaxJor {
         final Thread currentThread = Thread.currentThread();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             //the abnormal behavior when the program is shutdown.
-            shutdown(false);
+            System.out.println("lol?");
+            shutdown(shutdownNaturally);
             try {
                 //wait for the working threads to finalize (finish!)
                 currentThread.join();
@@ -123,15 +129,41 @@ public final class HaxJor {
         loadSettings();
         loadScripts();
 
+        //clear up some memory
+        System.gc();
+
         //command system
         final Scanner input = new Scanner(System.in);
         //TODO a command parser to allow complicated commands
         while (input.hasNextLine()) {
             String next = input.nextLine();
-            if (!next.startsWith("!")) {
-                LOGGER.info("Please enter a command. Do !help for a list of commands.");
-            } else {
-                System.out.println("Command entered: " + next);
+            command(next);
+        }
+    }
+
+    private static void command(String input) {
+        if (!input.startsWith("!")) {
+            LOGGER.info("Please enter a command. Do !help for a list of commands.");
+        } else {
+            String command = input.substring(1);
+            switch (command.toLowerCase()) {
+                case "exit":
+                case "close":
+                case "stop":
+                case "shutdown":
+                    shutdownNaturally = true;
+                    System.exit(0);
+                    break;
+                case "gc":
+                    System.gc();
+                    break;
+                case "help":
+                case "?":
+                    System.out.println("Commands: exit (or shutdown, close, stop). gc. help (or ?)");
+                    break;
+                default:
+                    System.out.println("Unknown command: " + command);
+                    break;
             }
         }
     }
@@ -203,6 +235,7 @@ public final class HaxJor {
             GlobalScreen.removeNativeKeyListener(KEYBOARD_INPUT_LISTENER);
             GlobalScreen.unregisterNativeHook();
 
+            System.exit(0);
         } catch (Exception e) {
             //write to file.
             e.printStackTrace();

@@ -1,5 +1,11 @@
 package major.haxjor.script;
 
+import com.moandjiezana.toml.Toml;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -10,14 +16,18 @@ import java.nio.file.Paths;
 public interface HaxJorScript {
 
     /**
-     * The base path for every script.
+     * Optional settings accessibility.
      */
-    Path SCRIPT_BASE_PATH = Paths.get(".", "data", "script_settings");
+    @Target(ElementType.TYPE)
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface HaxJorSettings {
+        String settingsFile();
+    }
 
     /**
-     * The settings path for this script.
+     * The base path for every script.
      */
-    Path settings();
+     Path SCRIPT_BASE_PATH = Paths.get(".", "data", "script_settings");
 
     /**
      * Init the script

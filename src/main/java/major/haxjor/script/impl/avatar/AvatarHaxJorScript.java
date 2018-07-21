@@ -66,17 +66,17 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
     private StringSelection previousClipboard;
 
     //use the parent path with this file path.
-    @Override
-    public Path settings() {
-        return HaxJorScript.SCRIPT_BASE_PATH.resolve(Paths.get("avatar_script.toml"));
-    }
+//    @Override
+//    public Path settings() {
+//        return HaxJorScript.SCRIPT_BASE_PATH.resolve(Paths.get("avatar_script.toml"));
+//    }
 
     @Override
     public final void initialize() {
-        Toml toml = new Toml().read(settings().toFile());
+//        Toml toml = new Toml().read(settings().toFile());
 
         //test for TOML
-        LOGGER.info(toml.getString("test"));
+//        LOGGER.info(toml.getString("test"));
 
         HaxJor.KEYBOARD_SCRIPTS.put(indicator(), this);
         System.out.println("added: " + indicator() + " " + this + " to keyboard scripts");

@@ -2,5 +2,5 @@
  authors = [ "Major" ] #Read only
 
 [config]
- debug_messages = true
+ debug_messages = false
  script_queue = true

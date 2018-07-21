@@ -36,8 +36,10 @@ public class KeyboardInputListener implements NativeKeyListener {
             return;
 
         HaxJorScript script = HaxJor.KEYBOARD_SCRIPTS.get(NativeKeyEvent.getKeyText(e.getKeyCode()).charAt(0));
-        System.out.println("Key pressed: " + NativeKeyEvent.getKeyText(e.getKeyCode()) + " c: " + NativeKeyEvent.getKeyText(e.getKeyCode()).charAt(0));
-        System.out.println(((int) ' ') + " and: " + " " + e.getKeyChar() + " " + e.getKeyCode());
+        if (HaxJor.debugMessages) {
+            System.out.println("Key pressed: " + NativeKeyEvent.getKeyText(e.getKeyCode()) + " c: " + NativeKeyEvent.getKeyText(e.getKeyCode()).charAt(0));
+            System.out.println(((int) ' ') + " and: " + " " + e.getKeyChar() + " " + e.getKeyCode());
+        }
         if (script == null) {
 //            System.out.println("No script found for: "+NativeKeyEvent.getKeyText(e.getKeyCode()));
 //            System.out.println("Keywords: "+ Arrays.toString(HaxJor.KEYBOARD_SCRIPTS.keySet().toArray()));
