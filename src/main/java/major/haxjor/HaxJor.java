@@ -137,7 +137,7 @@ public final class HaxJor {
     }
 
     //are we currently running any script?
-    public static boolean firingEvents;
+    public volatile static boolean firingEvents;
 
     //queue of pending scripts.
     private static final Queue<HaxJorScript> SCRIPT_QUEUE = new ArrayDeque<>();
@@ -154,8 +154,12 @@ public final class HaxJor {
     }
 
     //attempt to run the script, and then handle the queue.
-    public static void runScript(HaxJorScript script) {
+    //this must run synchronously, since we might reach a deadlock due to using recursive calling.
+    public synchronized static void runScript(HaxJorScript script) {
         //are we running a script atm?
+        if (script == null)
+            throw new NullPointerException("script is null.");
+
         if (firingEvents) {
             LOGGER.info("Queued action instead: " + script.getClass().getSimpleName());
             SCRIPT_QUEUE.add(script);
