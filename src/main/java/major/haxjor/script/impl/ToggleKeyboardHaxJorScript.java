@@ -1,5 +1,6 @@
 package major.haxjor.script.impl;
 
+import major.haxjor.HaxJor;
 import major.haxjor.jnative.keyboard.KeyboardJNativeListener;
 import major.haxjor.script.HaxJorScript;
 
@@ -20,6 +21,7 @@ public class ToggleKeyboardHaxJorScript implements HaxJorScript, KeyboardJNative
 
     @Override
     public void initialize() {
+        if (HaxJor.debugMessages)
         System.out.println("turned on.");
 
         //TODO settings could be the activation key for this script.

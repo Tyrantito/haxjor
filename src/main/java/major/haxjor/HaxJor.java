@@ -3,17 +3,14 @@ package major.haxjor;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.moandjiezana.toml.Toml;
-import com.moandjiezana.toml.TomlWriter;
 import major.haxjor.jnative.keyboard.KeyboardInputListener;
 import major.haxjor.jnative.keyboard.KeyboardJNativeListener;
 import major.haxjor.script.HaxJorScript;
-import major.haxjor.script.impl.ToggleKeyboardHaxJorScript;
 import org.jnativehook.GlobalScreen;
 import org.jnativehook.NativeHookException;
 import org.reflections.Reflections;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
@@ -60,7 +57,7 @@ public final class HaxJor {
     /**
      * Some static settings for the system.
      */
-    private static final Toml TOML_PARSER = new Toml().read(new File("./settings.toml"));
+    private static final Toml TOML_PARSER = new Toml().read(Paths.get(".", "settings.toml").toFile());
 
     //native listeners that are global for the program (these are the native listeners and not the script listeners!)
     private static final KeyboardInputListener KEYBOARD_INPUT_LISTENER = new KeyboardInputListener();
@@ -92,11 +89,21 @@ public final class HaxJor {
     private static boolean shutdownNaturally = false;
 
     /**
+     * Private, non-instanceable class.
+     */
+    private HaxJor() {
+        throw new UnsupportedOperationException("Class may not be instanced.");
+    }
+
+    /**
      * Infinity.
      */
     public static void main(String... args) throws NativeHookException {
+        //debug initialization period.☻☺
+        long startNano = System.nanoTime();
+
         LOGGER.info("HaxJor by Major.");
-        LOGGER.info("The usage is up to your own responsibility!\n");
+        LOGGER.info("The usage of this software is on your own responsibility!\n");
 
         LOGGER.info("Preparing JNativeHook");
         ConsoleHandler var5 = new ConsoleHandler();
@@ -114,8 +121,7 @@ public final class HaxJor {
         LOGGER.info("Hooking shutdown event...");
         final Thread currentThread = Thread.currentThread();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            //the abnormal behavior when the program is shutdown.
-            System.out.println("lol?");
+            //what happens on shutdown
             shutdown(shutdownNaturally);
             try {
                 //wait for the working threads to finalize (finish!)
@@ -132,12 +138,14 @@ public final class HaxJor {
         //clear up some memory
         System.gc();
 
+        //denote that the script has finished initializing.
+        LOGGER.info("HaxJor is now running (Took: "+elapsedMs(startNano)+"ms). Use !help for a list of commands.");
+
         //command system
         final Scanner input = new Scanner(System.in);
         //TODO a command parser to allow complicated commands
         while (input.hasNextLine()) {
-            String next = input.nextLine();
-            command(next);
+            command(input.nextLine());
         }
     }
 
@@ -176,14 +184,7 @@ public final class HaxJor {
 
     //some settings
     public static boolean debugMessages;
-    public static boolean scriptQueue;
-
-    /**
-     * Private, non-instanceable class.
-     */
-    private HaxJor() {
-        throw new UnsupportedOperationException("Class may not be instanced.");
-    }
+    public static boolean scriptQueueing;
 
     //attempt to run the script, and then handle the queue.
     //this must run synchronously, since we might reach a deadlock due to using recursive calling.
@@ -193,8 +194,10 @@ public final class HaxJor {
             throw new NullPointerException("script is null.");
 
         if (firingEvents) {
-            LOGGER.info("Queued action instead: " + script.getClass().getSimpleName());
-            SCRIPT_QUEUE.add(script);
+            if (scriptQueueing) {
+                LOGGER.info("Queued action instead: " + script.getClass().getSimpleName());
+                SCRIPT_QUEUE.add(script);
+            }
             return;
         }
 
@@ -208,7 +211,7 @@ public final class HaxJor {
         script.execute();
         firingEvents = false;
 
-        if (!SCRIPT_QUEUE.isEmpty()) {
+        if (scriptQueueing && !SCRIPT_QUEUE.isEmpty()) {
             runScript(SCRIPT_QUEUE.poll());
             LOGGER.info("Running script from queue...");
         }
@@ -247,7 +250,7 @@ public final class HaxJor {
      */
     private static void loadSettings() {
         long start = System.nanoTime();
-        scriptQueue = TOML_PARSER.getBoolean("config.script_queue");
+        scriptQueueing = TOML_PARSER.getBoolean("config.script_queue");
         debugMessages = TOML_PARSER.getBoolean("config.debug_messages");
 
         LOGGER.info("General settings has been loaded in " + elapsedMs(start) + "ms");

@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.util.concurrent.ExecutionException;
 
 import static major.haxjor.HaxJor.LOGGER;
+import static major.haxjor.HaxJor.debugMessages;
 
 /**
  * Avatar script for avatar effects.
@@ -79,6 +80,7 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
 //        LOGGER.info(toml.getString("test"));
 
         HaxJor.KEYBOARD_SCRIPTS.put(indicator(), this);
+        if (debugMessages)
         System.out.println("added: " + indicator() + " " + this + " to keyboard scripts");
 
         //initialize through
@@ -110,9 +112,11 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
                 effect.finish(this);
             }).get();//#get should block this thread until completion to avoid concurrent operations.
         } catch (InterruptedException | ExecutionException e) {
+            if (debugMessages)
             System.out.println("script blocking has been interrupted.");
             e.printStackTrace();
         }
+        if (debugMessages)
         System.out.println("this called once the task done. " + HaxJor.firingEvents);
     }
 
