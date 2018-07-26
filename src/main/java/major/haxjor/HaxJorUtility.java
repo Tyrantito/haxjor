@@ -18,7 +18,7 @@ public final class HaxJorUtility {
     }
 
     /**
-     * A short method for a simple expression, whether to send a debug message or not.
+     * A shortened method for a simple expression, whether to send a debug message or not.
      * @param message   the message to display
      */
     public static void debug(String message) {

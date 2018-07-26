@@ -1,5 +1,6 @@
 package major.haxjor.jnative.keyboard;
 
+import major.haxjor.HaxJor;
 import major.haxjor.script.HaxJorScript;
 
 import java.awt.*;
@@ -8,6 +9,7 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 
 import static java.awt.event.KeyEvent.*;
 
@@ -16,7 +18,6 @@ import static java.awt.event.KeyEvent.*;
  *
  * @author Major (Compatibility adjustments)
  * @author Style (C&P suggestion & function)
- *
  * @see <a href="https://stackoverflow.com/a/11779211">Credits for original author</a>
  */
 public class Keyboard {
@@ -397,9 +398,13 @@ public class Keyboard {
         if (length == 0) {
             return;
         }
-        ROBOT.keyPress(keyCodes[offset]);
-        doType(keyCodes, offset + 1, length - 1);
-        ROBOT.keyRelease(keyCodes[offset]);
+        try {
+            ROBOT.keyPress(keyCodes[offset]);
+            doType(keyCodes, offset + 1, length - 1);
+            ROBOT.keyRelease(keyCodes[offset]);
+        } catch (Throwable throwable) {
+            HaxJor.LOGGER.log(Level.WARNING, "Invalid keycode. ", throwable);
+        }
     }
 
 }
