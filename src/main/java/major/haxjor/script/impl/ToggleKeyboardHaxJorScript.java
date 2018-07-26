@@ -1,10 +1,10 @@
 package major.haxjor.script.impl;
 
-import major.haxjor.HaxJor;
+import major.haxjor.HaxJorUtility;
 import major.haxjor.jnative.keyboard.KeyboardJNativeListener;
 import major.haxjor.script.HaxJorScript;
+import major.haxjor.script.HaxJorScriptSettings;
 
-import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -12,35 +12,32 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author Major
  */
-@HaxJorScript.HaxJorSettings(settingsFile = "toggle_script.toml")
-public class ToggleKeyboardHaxJorScript implements HaxJorScript, KeyboardJNativeListener {
+@HaxJorScriptSettings.SettingsFile(file = "toggle_script.toml")
+public class ToggleKeyboardHaxJorScript extends HaxJorScriptSettings implements HaxJorScript, KeyboardJNativeListener {
 
     //the toggle state of keyboard scripts.
     public static final AtomicBoolean toggle = new AtomicBoolean(false);
 
-
     @Override
     public void initialize() {
-        if (HaxJor.debugMessages)
-        System.out.println("turned on.");
+        toggle.set(toml.getBoolean("keyboard.toggle"));
 
-        //TODO settings could be the activation key for this script.
+        HaxJorUtility.debug(toggle.get() + " is the toggle.");
     }
 
     @Override
     public void execute() {
-        //toggle keyboard scripts
         toggle.set(!toggle.get());
+        System.out.println("Keyboard scripts are now: " + (toggle.get() ? "enabled" : "disabled"));
     }
 
-    //this is always enabled, because its a toggle and when its disabled it has to still work so it can be enabled.
     @Override
     public boolean enabled() {
         return true;
     }
 
     @Override
-    public char indicator() {
-        return 0;
+    public String indicator() {
+        return null;
     }
 }

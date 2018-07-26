@@ -1,9 +1,13 @@
 package major.haxjor.jnative.keyboard;
 
+import major.haxjor.script.HaxJorScript;
+
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
+import java.util.HashMap;
+import java.util.Map;
 
 import static java.awt.event.KeyEvent.*;
 
@@ -23,6 +27,12 @@ public class Keyboard {
      * The character that acts as a space-bar in Haxball avatar. (Alt + 255)
      */
     public static final char HAXBALL_SPACE = ' ';
+
+    /**
+     * A cached map of scripts that implement a keyboard listener {@link KeyboardJNativeListener} and
+     * that reacts to an unique button.
+     */
+    public static final Map<String, HaxJorScript> KEYBOARD_SCRIPTS = new HashMap<>();
 
     /**
      * Static method to create a {@link Robot} instance while

@@ -1,18 +1,14 @@
 package major.haxjor.script.impl.avatar;
 
-import com.moandjiezana.toml.Toml;
 import major.haxjor.HaxJor;
-import major.haxjor.jnative.keyboard.KeyboardInputListener;
 import major.haxjor.jnative.keyboard.KeyboardJNativeListener;
 import major.haxjor.script.HaxJorScript;
 
 import java.awt.datatransfer.StringSelection;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.ExecutionException;
 
 import static major.haxjor.HaxJor.LOGGER;
-import static major.haxjor.HaxJor.debugMessages;
+import static major.haxjor.HaxJorUtility.debug;
 
 /**
  * Avatar script for avatar effects.
@@ -59,8 +55,8 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
     private boolean isRunning;
 
     @Override
-    public final char indicator() {
-        return 'Q';
+    public final String indicator() {
+        return "Q";
     }
 
     //the clipboard context we've had before overwriting it.
@@ -79,9 +75,7 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
         //test for TOML
 //        LOGGER.info(toml.getString("test"));
 
-        HaxJor.KEYBOARD_SCRIPTS.put(indicator(), this);
-        if (debugMessages)
-        System.out.println("added: " + indicator() + " " + this + " to keyboard scripts");
+        debug("added: " + indicator() + " " + this + " to keyboard scripts");
 
         //initialize through
     }
@@ -112,12 +106,10 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
                 effect.finish(this);
             }).get();//#get should block this thread until completion to avoid concurrent operations.
         } catch (InterruptedException | ExecutionException e) {
-            if (debugMessages)
-            System.out.println("script blocking has been interrupted.");
+            debug("script blocking has been interrupted.");
             e.printStackTrace();
         }
-        if (debugMessages)
-        System.out.println("this called once the task done. " + HaxJor.firingEvents);
+        debug("this called once the task done. " + HaxJor.firingEvents);
     }
 
     @Override

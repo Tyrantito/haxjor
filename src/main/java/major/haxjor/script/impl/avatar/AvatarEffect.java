@@ -121,7 +121,7 @@ public enum AvatarEffect {
      *
      * @param chars the characters to write on this avatar.
      */
-    final synchronized void avatar(char... chars) {
+    protected final synchronized void avatar(char... chars) {
 //        System.out.println("We do avatar: " + Arrays.toString(chars));
         //starts by 'tabbing'
         Keyboard.type('\t');

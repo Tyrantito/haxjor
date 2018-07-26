@@ -3,25 +3,31 @@ package major.haxjor;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.moandjiezana.toml.Toml;
+import major.haxjor.jnative.keyboard.Keyboard;
 import major.haxjor.jnative.keyboard.KeyboardInputListener;
 import major.haxjor.jnative.keyboard.KeyboardJNativeListener;
 import major.haxjor.script.HaxJorScript;
+import major.haxjor.script.HaxJorScriptSettings;
+import major.haxjor.script.impl.ToggleKeyboardHaxJorScript;
 import org.jnativehook.GlobalScreen;
 import org.jnativehook.NativeHookException;
 import org.reflections.Reflections;
 
-import java.io.File;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Queue;
+import java.util.Scanner;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.*;
-import java.util.logging.Formatter;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static major.haxjor.HaxJorUtility.debug;
+import static major.haxjor.HaxJorUtility.elapsedMs;
 
 /**
  * HaxJor is a HaxBall specialized program that offers various of useful utilities
@@ -68,12 +74,6 @@ public final class HaxJor {
     private static final Multiset<HaxJorScript> SCRIPTS = HashMultiset.create();
 
     /**
-     * A cached map of scripts that implement a keyboard listener {@link KeyboardJNativeListener} and
-     * that reacts to an unique character.
-     */
-    public static final Map<Character, HaxJorScript> KEYBOARD_SCRIPTS = new HashMap<>();
-
-    /**
      * The path for scripts
      */
     private static final Path SCRIPTS_IMPL_DIRECTORY = Paths.get("major.haxjor.script.impl");
@@ -99,15 +99,15 @@ public final class HaxJor {
      * Infinity.
      */
     public static void main(String... args) throws NativeHookException {
-        //debug initialization period.☻☺
+        //debug initialization period.
         long startNano = System.nanoTime();
 
         LOGGER.info("HaxJor by Major.");
         LOGGER.info("The usage of this software is on your own responsibility!\n");
 
-        LOGGER.info("Preparing JNativeHook");
+        LOGGER.info("Preparing JNativeHook...");
         ConsoleHandler var5 = new ConsoleHandler();
-        var5.setFormatter(new LogFormatter());
+        var5.setFormatter(new HaxJorUtility.LogFormatter());
         var5.setLevel(Level.OFF);
         JNATIVE_LOGGER.addHandler(var5);
         JNATIVE_LOGGER.setUseParentHandlers(false);
@@ -117,6 +117,10 @@ public final class HaxJor {
 
         LOGGER.info("Hooking native listeners...");
         GlobalScreen.addNativeKeyListener(new KeyboardInputListener());
+
+        LOGGER.info("Loading utilities...");
+        loadSettings();
+        loadScripts();
 
         LOGGER.info("Hooking shutdown event...");
         final Thread currentThread = Thread.currentThread();
@@ -131,15 +135,11 @@ public final class HaxJor {
             }
         }));
 
-        LOGGER.info("Loading utilities...");
-        loadSettings();
-        loadScripts();
-
         //clear up some memory
         System.gc();
 
         //denote that the script has finished initializing.
-        LOGGER.info("HaxJor is now running (Took: "+elapsedMs(startNano)+"ms). Use !help for a list of commands.");
+        LOGGER.info("HaxJor is now running (Took: " + elapsedMs(startNano) + "ms). Use !help for a list of commands.");
 
         //command system
         final Scanner input = new Scanner(System.in);
@@ -180,7 +180,7 @@ public final class HaxJor {
     public volatile static boolean firingEvents;
 
     //queue of pending scripts.
-    private static final Queue<HaxJorScript> SCRIPT_QUEUE = new ArrayDeque<>();
+    private static final Queue<HaxJorScript> scriptQueue = new ArrayDeque<>();
 
     //some settings
     public static boolean debugMessages;
@@ -193,10 +193,11 @@ public final class HaxJor {
         if (script == null)
             throw new NullPointerException("script is null.");
 
+        //are we currently doing any script-related action?
         if (firingEvents) {
             if (scriptQueueing) {
-                LOGGER.info("Queued action instead: " + script.getClass().getSimpleName());
-                SCRIPT_QUEUE.add(script);
+                debug("Queued action instead: " + script.getClass().getSimpleName());
+                scriptQueue.add(script);
             }
             return;
         }
@@ -207,15 +208,28 @@ public final class HaxJor {
             return;
         }
 
+        //is this a keyboard script? and if so, are they disabled?
+        if (script instanceof KeyboardJNativeListener) {
+            if (!ToggleKeyboardHaxJorScript.toggle.get()) {
+                debug("Keyboard scripts are disabled.");
+                return;
+            }
+        }
+
+        //denote that we're executing a script
         firingEvents = true;
+
+        //execute the script
         script.execute();
+
+        //denote that the action is done
         firingEvents = false;
 
-        if (scriptQueueing && !SCRIPT_QUEUE.isEmpty()) {
-            runScript(SCRIPT_QUEUE.poll());
-            LOGGER.info("Running script from queue...");
+        //proceed the script queue if enabled.
+        if (scriptQueueing && !scriptQueue.isEmpty()) {
+            runScript(scriptQueue.poll());
+            debug("Running script from queue...");
         }
-//        System.out.println("Disabled.");
     }
 
     /**
@@ -226,7 +240,7 @@ public final class HaxJor {
      */
     public static void shutdown(boolean natural) {
         try {
-            System.out.println("Shutting down Haxjor... (behavior: " + (natural ? "natural" : "unnatural") + ")");
+            LOGGER.info("Shutting down Haxjor... (behavior: " + (natural ? "natural" : "unnatural") + ")");
 
             //what happens when the program unnaturally shutdowns (i.e exception)
             if (!natural) {
@@ -258,8 +272,14 @@ public final class HaxJor {
 
     //load scripts using reflections.
     private static void loadScripts() {
-        Set<Class<? extends HaxJorScript>> scripts = new Reflections(SCRIPTS_IMPL_DIRECTORY.toString()).getSubTypesOf(HaxJorScript.class);
-        LOGGER.info("" + scripts.size() + " are about to be loaded...");
+        final Reflections reflections = new Reflections(SCRIPTS_IMPL_DIRECTORY.toString());
+        //the scripts
+        final Set<Class<? extends HaxJorScript>> scripts = reflections.getSubTypesOf(HaxJorScript.class);
+        //scripts that has settings
+        final Set<Class<?>> scriptSettings = reflections.getTypesAnnotatedWith(HaxJorScriptSettings.SettingsFile.class);
+
+        LOGGER.info("" + scripts.size() + " scripts are about to be loaded...");
+
 
         int success = 0;
         long startNano = System.nanoTime();
@@ -267,8 +287,19 @@ public final class HaxJor {
             try {
                 //create a new instance of the script
                 HaxJorScript haxJorScript = script.getDeclaredConstructor().newInstance();
+                //build settings if required
+                if (scriptSettings.contains(script)) {
+                    ((HaxJorScriptSettings) haxJorScript).build(script.getAnnotation(HaxJorScriptSettings.SettingsFile.class).file());
+                }
                 //initialize the script
                 haxJorScript.initialize();
+                //if a keyboard script, cache the indicator linked to this script.
+                if (haxJorScript instanceof KeyboardJNativeListener) {
+                    //whats null means that we don't want to use it atm.
+                    if (((KeyboardJNativeListener) haxJorScript).indicator() != null) {
+                        Keyboard.KEYBOARD_SCRIPTS.put(((KeyboardJNativeListener) haxJorScript).indicator(), haxJorScript);
+                    }
+                }
                 //cache the script
                 SCRIPTS.add(haxJorScript);
                 //count successful scripts loaded
@@ -281,38 +312,4 @@ public final class HaxJor {
         LOGGER.info("Successfully loaded " + success + "/" + scripts.size() + " scripts in " + elapsedMs(startNano) + "ms.");
     }
 
-    /**
-     * A method for calculating elapsed milliseconds by nanoseconds, converted using {@link TimeUnit}.
-     *
-     * @param startNano the nanoseconds on the start.
-     * @return elapsed milliseconds since startNano
-     */
-    private static long elapsedMs(long startNano) {
-        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNano);
-    }
-
-    //imported: NativeHookDemo.class
-    private static final class LogFormatter extends Formatter {
-
-        private LogFormatter() {
-        }
-
-        public String format(LogRecord var1) {
-            StringBuilder var2 = new StringBuilder();
-            var2.append(new Date(var1.getMillis())).append(" ").append(var1.getLevel().getLocalizedName()).append(":\t").append(this.formatMessage(var1));
-            if (var1.getThrown() != null) {
-                try {
-                    StringWriter var3 = new StringWriter();
-                    PrintWriter var4 = new PrintWriter(var3);
-                    var1.getThrown().printStackTrace(var4);
-                    var4.close();
-                    var2.append(var3.toString());
-                    var3.close();
-                } catch (Exception var5) {
-                }
-            }
-
-            return var2.toString();
-        }
-    }
 }

@@ -10,8 +10,8 @@ import major.haxjor.script.HaxJorScript;
 public class ChatHaxJorScript implements HaxJorScript, KeyboardJNativeListener {
 
     @Override
-    public char indicator() {
-        return 0;
+    public String indicator() {
+        return null;
     }
 
     @Override

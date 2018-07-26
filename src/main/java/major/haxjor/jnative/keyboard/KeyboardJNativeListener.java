@@ -7,5 +7,10 @@ import major.haxjor.jnative.JNativeListener;
  */
 public interface KeyboardJNativeListener extends JNativeListener {
 
-    char indicator();
+    /**
+     * The button that indicates that a script should be executed.
+     *
+     * @return the name of the keystroke.
+     */
+    String indicator();
 }
