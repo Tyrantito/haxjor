@@ -131,12 +131,17 @@ public enum AvatarEffect {
         Keyboard.copyPaste(chars);
         //enter as we finish this avatar
         Keyboard.enter();
+
+        System.out.println("this avatar just finished....");
     }
 
     /**
      * What happens before the effect starts.
      */
     void start(AvatarHaxJorScript script) {
+        if (script.isRememberClipboard()) {
+            Keyboard.backupClipboard();
+        }
         //backup the current clipboard
 //            try {
 //                script.previousClipboard = new StringSelection(((String) Toolkit.getDefaultToolkit()
@@ -150,15 +155,17 @@ public enum AvatarEffect {
      * What happens when this avatar script is finished.
      */
     void finish(AvatarHaxJorScript script) {
-        //restore the previous clipboard.
-//            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-//            clipboard.setContents(script.previousClipboard, script.previousClipboard);
-
         //should we restore avatar to default on end?
         if (script.isRestoreToDefault()) {
             avatar(AvatarHaxJorScript.DEFAULT_AVATAR);
         }
-        //indicate that we finished running this script.
+
+        //restore the previous clipboard.
+//        if (script.isRememberClipboard()) {
+//            System.out.println("this happens.");
+//            Keyboard.restoreClipboard();
+//        }
+        //indicate that we've finished running this script.
         script.setRunning(false);
     }
 

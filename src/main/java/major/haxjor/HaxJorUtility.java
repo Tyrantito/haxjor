@@ -19,10 +19,11 @@ public final class HaxJorUtility {
 
     /**
      * A shortened method for a simple expression, whether to send a debug message or not.
+     * TODO this could be expanded by having debug levels
      * @param message   the message to display
      */
     public static void debug(String message) {
-        if (HaxJor.debugMessages) {
+        if (HaxJorSettings.DEBUG_MESSAGES) {
             System.out.println(message);
         }
     }

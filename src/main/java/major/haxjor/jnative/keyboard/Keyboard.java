@@ -5,13 +5,18 @@ import major.haxjor.script.HaxJorScript;
 
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.KeyEvent;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
 import static java.awt.event.KeyEvent.*;
+import static major.haxjor.HaxJorUtility.debug;
 
 /**
  * Controls keyboard pressing actions only.
@@ -59,6 +64,39 @@ public class Keyboard {
         }
     }
 
+    //backup the clipboard.
+    private static StringSelection prevClipboard;
+
+    /**
+     * Restore the previous clipboard.
+     */
+    public static void restoreClipboard() {
+        if (prevClipboard == null) {
+            System.out.println("No previous clipboard available.");
+            return;
+        }
+        try {
+            System.out.println("restoring... "+prevClipboard.getTransferData(DataFlavor.stringFlavor));
+        } catch (UnsupportedFlavorException | IOException e) {
+            e.printStackTrace();
+        }
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        clipboard.setContents(prevClipboard, prevClipboard);
+        System.out.println("restored.");
+    }
+
+    /**
+     * Backup the current clipboard.
+     */
+    public static void backupClipboard() {
+        try {
+            prevClipboard = new StringSelection((String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor));
+            System.out.println("backing up..");
+        } catch (UnsupportedFlavorException | IOException e) {
+            HaxJor.LOGGER.log(Level.WARNING, "Couldn't backup clipboard.", e);
+        }
+    }
+
     /**
      * Copy paste the chars.
      * <p>
@@ -70,14 +108,20 @@ public class Keyboard {
         Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
         StringSelection stringSelection = new StringSelection(new String(chars));
         clipboard.setContents(stringSelection, stringSelection);
+        try {
+            System.out.println(stringSelection.getTransferData(DataFlavor.stringFlavor)+" is the legit");
+        } catch (UnsupportedFlavorException | IOException e) {
+            e.printStackTrace();
+        }
         ROBOT.keyPress(KeyEvent.VK_CONTROL);
         ROBOT.keyPress(KeyEvent.VK_V);
         ROBOT.keyRelease(KeyEvent.VK_V);
         ROBOT.keyRelease(KeyEvent.VK_CONTROL);
+        System.out.println("COPY PASTED: . "+ Arrays.toString(chars));
 
     }
 
-    //shortcut to 'enter' key press
+    //shortcut for 'enter' key press
     public static void enter() {
         type('\n');
     }
@@ -392,8 +436,6 @@ public class Keyboard {
         doType(keyCodes, 0, keyCodes.length);
     }
 
-    //synchronized blocks the whole class due to static reference. which is good because this can't run concurrently
-    //since we only have 1 keyboard
     private static synchronized void doType(int[] keyCodes, int offset, int length) {
         if (length == 0) {
             return;

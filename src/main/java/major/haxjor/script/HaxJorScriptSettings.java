@@ -19,7 +19,7 @@ public abstract class HaxJorScriptSettings {
     /**
      * The base path for every script.
      */
-    public static final Path SCRIPT_BASE_PATH = Paths.get(".", "data", "script_settings");
+    private static final Path SCRIPT_BASE_PATH = Paths.get(".", "data", "script_settings");
 
     /**
      * The file name that will be resolved through the {@link #SCRIPT_BASE_PATH} path.
@@ -38,11 +38,13 @@ public abstract class HaxJorScriptSettings {
     /**
      * Build the TOML by the file.
      *
-     * @param file
+     * @param file the file name of the setting file.
      */
-    public final HaxJorScriptSettings build(final String file) {
-        toml = new Toml().read(HaxJorScriptSettings.SCRIPT_BASE_PATH.resolve((file)).toFile());
-        return this;
+    public final void build(final String file) {
+        if (!file.endsWith(".toml")) {
+            throw new IllegalArgumentException("File must be .toml");
+        }
+        toml = new Toml().read(HaxJorScriptSettings.SCRIPT_BASE_PATH.resolve(file).toFile());
     }
 
 }

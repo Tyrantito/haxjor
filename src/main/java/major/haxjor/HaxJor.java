@@ -1,8 +1,5 @@
 package major.haxjor;
 
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
-import com.moandjiezana.toml.Toml;
 import major.haxjor.jnative.keyboard.Keyboard;
 import major.haxjor.jnative.keyboard.KeyboardInputListener;
 import major.haxjor.jnative.keyboard.KeyboardJNativeListener;
@@ -16,16 +13,14 @@ import org.reflections.Reflections;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayDeque;
-import java.util.Queue;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static major.haxjor.HaxJorSettings.*;
 import static major.haxjor.HaxJorUtility.debug;
 import static major.haxjor.HaxJorUtility.elapsedMs;
 
@@ -61,17 +56,14 @@ public final class HaxJor {
     private static final Logger JNATIVE_LOGGER = Logger.getLogger(GlobalScreen.class.getPackage().getName());
 
     /**
-     * Some static settings for the system.
-     */
-    private static final Toml TOML_PARSER = new Toml().read(Paths.get(".", "settings.toml").toFile());
-
-    //native listeners that are global for the program (these are the native listeners and not the script listeners!)
+     * Native listeners that are global for the program (these are the native listeners and not the script listeners!)
+     **/
     private static final KeyboardInputListener KEYBOARD_INPUT_LISTENER = new KeyboardInputListener();
 
     /**
      * The set of scripts. //TODO doesn't have to be multiset
      */
-    private static final Multiset<HaxJorScript> SCRIPTS = HashMultiset.create();
+    private static final Set<HaxJorScript> SCRIPTS = new HashSet<>();
 
     /**
      * The path for scripts
@@ -118,8 +110,7 @@ public final class HaxJor {
         LOGGER.info("Hooking native listeners...");
         GlobalScreen.addNativeKeyListener(new KeyboardInputListener());
 
-        LOGGER.info("Loading utilities...");
-        loadSettings();
+        LOGGER.info("Loading scripts...");
         loadScripts();
 
         LOGGER.info("Hooking shutdown event...");
@@ -182,10 +173,6 @@ public final class HaxJor {
     //queue of pending scripts.
     private static final Queue<HaxJorScript> scriptQueue = new ArrayDeque<>();
 
-    //some settings
-    public static boolean debugMessages;
-    public static boolean scriptQueueing;
-
     //attempt to run the script, and then handle the queue.
     //this must run synchronously, since we might reach a deadlock due to using recursive calling.
     public synchronized static void runScript(HaxJorScript script) {
@@ -195,7 +182,7 @@ public final class HaxJor {
 
         //are we currently doing any script-related action?
         if (firingEvents) {
-            if (scriptQueueing) {
+            if (SCRIPT_QUEUEING) {
                 debug("Queued action instead: " + script.getClass().getSimpleName());
                 scriptQueue.add(script);
             }
@@ -226,7 +213,7 @@ public final class HaxJor {
         firingEvents = false;
 
         //proceed the script queue if enabled.
-        if (scriptQueueing && !scriptQueue.isEmpty()) {
+        if (SCRIPT_QUEUEING && !scriptQueue.isEmpty()) {
             runScript(scriptQueue.poll());
             debug("Running script from queue...");
         }
@@ -259,17 +246,6 @@ public final class HaxJor {
         }
     }
 
-    /**
-     * TODO find a better way rather than those variables...
-     */
-    private static void loadSettings() {
-        long start = System.nanoTime();
-        scriptQueueing = TOML_PARSER.getBoolean("config.script_queue");
-        debugMessages = TOML_PARSER.getBoolean("config.debug_messages");
-
-        LOGGER.info("General settings has been loaded in " + elapsedMs(start) + "ms");
-    }
-
     //load scripts using reflections.
     private static void loadScripts() {
         final Reflections reflections = new Reflections(SCRIPTS_IMPL_DIRECTORY.toString());
@@ -279,7 +255,6 @@ public final class HaxJor {
         final Set<Class<?>> scriptSettings = reflections.getTypesAnnotatedWith(HaxJorScriptSettings.SettingsFile.class);
 
         LOGGER.info("" + scripts.size() + " scripts are about to be loaded...");
-
 
         int success = 0;
         long startNano = System.nanoTime();

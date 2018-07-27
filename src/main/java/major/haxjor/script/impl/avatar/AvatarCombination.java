@@ -7,7 +7,8 @@ package major.haxjor.script.impl.avatar;
  */
 public enum AvatarCombination {
     SMILES(150,0,'☺', '☻','☺', '☻','☺', '☻','☺', '☻','☺', '☻','☺', '☻','☺', '☻','☺', '☻','☺', '☻','☺', '☻','☺', '☻','☺', '☻','☺', '☻','☺', '☻','☺', '☻','☺', '☻','☺', '☻'),
-    EZPZ("_eZpZ_");
+    EZPZ("_eZpZ_"),
+    A("A");
     //the chars combination of this avatar
     private final char[] avatarCombination;
     //overwrites the default delay between char (depending on effect).

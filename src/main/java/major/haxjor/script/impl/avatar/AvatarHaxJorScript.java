@@ -1,13 +1,18 @@
 package major.haxjor.script.impl.avatar;
 
 import major.haxjor.HaxJor;
+import major.haxjor.jnative.keyboard.Keyboard;
 import major.haxjor.jnative.keyboard.KeyboardJNativeListener;
 import major.haxjor.script.HaxJorScript;
+import major.haxjor.script.HaxJorScriptSettings;
 
 import java.awt.datatransfer.StringSelection;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import static major.haxjor.HaxJor.LOGGER;
+import static major.haxjor.HaxJor.SCRIPT_EXECUTOR;
 import static major.haxjor.HaxJorUtility.debug;
 
 /**
@@ -15,7 +20,8 @@ import static major.haxjor.HaxJorUtility.debug;
  *
  * @author Major
  */
-public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener {
+@HaxJorScriptSettings.SettingsFile(file = "avatar_script.toml")
+public class AvatarHaxJorScript extends HaxJorScriptSettings implements HaxJorScript, KeyboardJNativeListener {
 
     /**
      * The char(s) for our default avatar. {max chars = 2}
@@ -27,14 +33,18 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
      */
     public AvatarHaxJorScript() {
         //some default avatar.
-        combination = AvatarCombination.SMILES;
+        combination = AvatarCombination.A;
         effect = AvatarEffect.CHAIN;
         speed = AvatarSpeed.FAST;
     }
 
+    /*
+     * Settings
+     */
     private AvatarCombination combination;
     private AvatarEffect effect;
     private AvatarSpeed speed;
+    private boolean rememberClipboard;
 
     //should we set our avatar to default when effect is completed?
     private boolean restoreToDefault = true;
@@ -59,9 +69,6 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
         return "Q";
     }
 
-    //the clipboard context we've had before overwriting it.
-    private StringSelection previousClipboard;
-
     //use the parent path with this file path.
 //    @Override
 //    public Path settings() {
@@ -70,12 +77,7 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
 
     @Override
     public final void initialize() {
-//        Toml toml = new Toml().read(settings().toFile());
-
-        //test for TOML
-//        LOGGER.info(toml.getString("test"));
-
-        debug("added: " + indicator() + " " + this + " to keyboard scripts");
+        rememberClipboard = toml.getBoolean("rememberClipboard");
 
         //initialize through
     }
@@ -100,11 +102,21 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
 //        }
         isRunning = true;
         try {
-            HaxJor.SCRIPT_EXECUTOR.submit(() -> {
-                effect.start(this);
-                effect.onEffect(this);
-                effect.finish(this);
-            }).get();//#get should block this thread until completion to avoid concurrent operations.
+            //proper sequence
+            CompletableFuture
+                    .runAsync(() -> effect.start(this), SCRIPT_EXECUTOR)
+                    .thenRun(() -> effect.onEffect(this))
+                    .thenRun(() -> {
+                        System.out.println("Now we doing this......");
+                        effect.finish(this);
+                        System.out.println("Now we finished this...");
+                    })
+                    .thenRun(() -> {
+                        if (rememberClipboard) {
+                            Keyboard.restoreClipboard();
+                        }
+                    })
+                    .get();//#get should block this thread until completion to avoid concurrent operations.
         } catch (InterruptedException | ExecutionException e) {
             debug("script blocking has been interrupted.");
             e.printStackTrace();
@@ -123,5 +135,9 @@ public class AvatarHaxJorScript implements HaxJorScript, KeyboardJNativeListener
 
     public final boolean isRestoreToDefault() {
         return restoreToDefault;
+    }
+
+    public final boolean isRememberClipboard() {
+        return rememberClipboard;
     }
 }
