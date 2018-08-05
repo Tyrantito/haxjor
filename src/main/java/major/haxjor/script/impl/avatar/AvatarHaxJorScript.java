@@ -1,15 +1,12 @@
 package major.haxjor.script.impl.avatar;
 
 import major.haxjor.HaxJor;
-import major.haxjor.jnative.keyboard.Keyboard;
 import major.haxjor.jnative.keyboard.KeyboardJNativeListener;
 import major.haxjor.script.HaxJorScript;
 import major.haxjor.script.HaxJorScriptSettings;
 
-import java.awt.datatransfer.StringSelection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import static major.haxjor.HaxJor.LOGGER;
 import static major.haxjor.HaxJor.SCRIPT_EXECUTOR;
@@ -77,7 +74,10 @@ public class AvatarHaxJorScript extends HaxJorScriptSettings implements HaxJorSc
 
     @Override
     public final void initialize() {
-        rememberClipboard = toml.getBoolean("rememberClipboard");
+        rememberClipboard = hjsp.getBoolean("rememberClipboard");
+        speed = hjsp.get("speed", AvatarSpeed.class);
+        effect = hjsp.get("effect", AvatarEffect.class);
+        combination = hjsp.get("combination", AvatarCombination.class);
 
         //initialize through
     }
@@ -106,16 +106,7 @@ public class AvatarHaxJorScript extends HaxJorScriptSettings implements HaxJorSc
             CompletableFuture
                     .runAsync(() -> effect.start(this), SCRIPT_EXECUTOR)
                     .thenRun(() -> effect.onEffect(this))
-                    .thenRun(() -> {
-                        System.out.println("Now we doing this......");
-                        effect.finish(this);
-                        System.out.println("Now we finished this...");
-                    })
-                    .thenRun(() -> {
-                        if (rememberClipboard) {
-                            Keyboard.restoreClipboard();
-                        }
-                    })
+                    .thenRun(() -> effect.finish(this))
                     .get();//#get should block this thread until completion to avoid concurrent operations.
         } catch (InterruptedException | ExecutionException e) {
             debug("script blocking has been interrupted.");

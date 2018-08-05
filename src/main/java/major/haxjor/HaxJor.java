@@ -6,6 +6,7 @@ import major.haxjor.jnative.keyboard.KeyboardJNativeListener;
 import major.haxjor.script.HaxJorScript;
 import major.haxjor.script.HaxJorScriptSettings;
 import major.haxjor.script.impl.ToggleKeyboardHaxJorScript;
+import major.haxjor.settings.HJSP;
 import org.jnativehook.GlobalScreen;
 import org.jnativehook.NativeHookException;
 import org.reflections.Reflections;
@@ -20,7 +21,7 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static major.haxjor.HaxJorSettings.*;
+import static major.haxjor.HaxJorSettings.SCRIPT_QUEUEING;
 import static major.haxjor.HaxJorUtility.debug;
 import static major.haxjor.HaxJorUtility.elapsedMs;
 
@@ -61,7 +62,7 @@ public final class HaxJor {
     private static final KeyboardInputListener KEYBOARD_INPUT_LISTENER = new KeyboardInputListener();
 
     /**
-     * The set of scripts. //TODO doesn't have to be multiset
+     * The set of scripts. //TODO scripts currently do not query
      */
     private static final Set<HaxJorScript> SCRIPTS = new HashSet<>();
 
@@ -264,7 +265,7 @@ public final class HaxJor {
                 HaxJorScript haxJorScript = script.getDeclaredConstructor().newInstance();
                 //build settings if required
                 if (scriptSettings.contains(script)) {
-                    ((HaxJorScriptSettings) haxJorScript).build(script.getAnnotation(HaxJorScriptSettings.SettingsFile.class).file());
+                    HJSP.build(script.getAnnotation(HaxJorScriptSettings.SettingsFile.class).file()).parse();
                 }
                 //initialize the script
                 haxJorScript.initialize();

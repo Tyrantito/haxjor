@@ -4,19 +4,14 @@ import major.haxjor.HaxJor;
 import major.haxjor.script.HaxJorScript;
 
 import java.awt.*;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.StringSelection;
-import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.datatransfer.*;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
 import static java.awt.event.KeyEvent.*;
-import static major.haxjor.HaxJorUtility.debug;
 
 /**
  * Controls keyboard pressing actions only.
@@ -27,7 +22,15 @@ import static major.haxjor.HaxJorUtility.debug;
  */
 public class Keyboard {
 
+    /**
+     * The final robot instance
+     */
     private static final Robot ROBOT = create();
+
+    /**
+     * The final clipboard instance
+     */
+    private static final Clipboard CLIPBOARD = Toolkit.getDefaultToolkit().getSystemClipboard();
 
     /**
      * The character that acts as a space-bar in Haxball avatar. (Alt + 255)
@@ -76,12 +79,11 @@ public class Keyboard {
             return;
         }
         try {
-            System.out.println("restoring... "+prevClipboard.getTransferData(DataFlavor.stringFlavor));
+            System.out.println("restoring... " + prevClipboard.getTransferData(DataFlavor.stringFlavor));
         } catch (UnsupportedFlavorException | IOException e) {
             e.printStackTrace();
         }
-        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-        clipboard.setContents(prevClipboard, prevClipboard);
+        CLIPBOARD.setContents(prevClipboard, prevClipboard);
         System.out.println("restored.");
     }
 
@@ -97,19 +99,20 @@ public class Keyboard {
         }
     }
 
+
     /**
      * Copy paste the chars.
-     * <p>
-     * Note: this keeps a backup of your current clipboard, overwrite it, and then reverse it.
-     *
-     * @param chars
+     * Note: this will overwrite your current clipboard.
      */
-    public static synchronized void copyPaste(char... chars) {
-        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-        StringSelection stringSelection = new StringSelection(new String(chars));
-        clipboard.setContents(stringSelection, stringSelection);
+    public static void copyPaste(char... chars) {
+        copyPaste(new String(chars));
+    }
+
+    public static synchronized void copyPaste(String text) {
+        StringSelection stringSelection = new StringSelection(text);
+        CLIPBOARD.setContents(stringSelection, null);
         try {
-            System.out.println(stringSelection.getTransferData(DataFlavor.stringFlavor)+" is the legit");
+            System.out.println(stringSelection.getTransferData(DataFlavor.stringFlavor) + " is the legit");
         } catch (UnsupportedFlavorException | IOException e) {
             e.printStackTrace();
         }
@@ -117,7 +120,7 @@ public class Keyboard {
         ROBOT.keyPress(KeyEvent.VK_V);
         ROBOT.keyRelease(KeyEvent.VK_V);
         ROBOT.keyRelease(KeyEvent.VK_CONTROL);
-        System.out.println("COPY PASTED: . "+ Arrays.toString(chars));
+        System.out.println("COPY PASTED: . " + text);
 
     }
 

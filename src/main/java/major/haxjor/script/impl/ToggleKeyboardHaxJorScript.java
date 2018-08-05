@@ -20,7 +20,7 @@ public class ToggleKeyboardHaxJorScript extends HaxJorScriptSettings implements 
 
     @Override
     public void initialize() {
-        toggle.set(toml.getBoolean("keyboard.toggle"));
+        toggle.set(hjsp.getBoolean("keyboard.toggle"));
 
         HaxJorUtility.debug(toggle.get() + " is the toggle.");
     }

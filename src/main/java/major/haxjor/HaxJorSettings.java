@@ -24,7 +24,7 @@ public final class HaxJorSettings {
     /**
      * Should debug messages appear in console? This should only be enabled when required, because of the spam.
      */
-    static final boolean DEBUG_MESSAGES = TOML_PARSER.getBoolean("config.debug_messages");
+    public static final boolean DEBUG_MESSAGES = TOML_PARSER.getBoolean("config.debug_messages");
 
     /**
      * Uninstanceable class

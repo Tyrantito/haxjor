@@ -22,7 +22,7 @@ public enum AvatarEffect {
             for (int repeat = 0; repeat < 1 + script.getAvatarCombination().getRepeat(); repeat++) {
                 for (char c : chars) {
                     avatar(c);
-                    pend(delay);
+                    script.pend(delay);
                 }
             }
         }
@@ -39,15 +39,15 @@ public enum AvatarEffect {
 
             for (int repeat = 0; repeat < 1 + script.getAvatarCombination().getRepeat(); repeat++) {
                 //write forward
-                for (char aChar : chars) {
-                    avatar(aChar);
-                    pend(delay);
+                for (char c : chars) {
+                    avatar(c);
+                    script.pend(delay);
                 }
 
                 //write backward
                 for (int i = chars.length - 1; i >= 0; i--) {
                     avatar(chars[i]);
-                    pend(delay);
+                    script.pend(delay);
                 }
             }
         }
@@ -71,11 +71,11 @@ public enum AvatarEffect {
                     if (index == 0) {
                         prevChar = chars[index];
                         avatar(prevChar);
-                        pend(delay);
+                        script.pend(delay);
                     } else {
                         nextChar = chars[index];
                         avatar(prevChar, nextChar);
-                        pend(delay);
+                        script.pend(delay);
                         prevChar = nextChar;
                     }
                 }
@@ -97,14 +97,14 @@ public enum AvatarEffect {
                     avatar(Integer.toString(i).charAt(0));
                 else
                     avatar(Integer.toString(i).charAt(0), Integer.toString(i).charAt(1));
-                pend(delay);
+                script.pend(delay);
             }
             for (int i = 100; i > 0; i--) {
                 if (i < 10)
                     avatar(Integer.toString(i).charAt(0));
                 else
                     avatar(Integer.toString(i).charAt(0), Integer.toString(i).charAt(1));
-                pend(delay);
+                script.pend(delay);
             }
         }
     };
@@ -142,13 +142,6 @@ public enum AvatarEffect {
         if (script.isRememberClipboard()) {
             Keyboard.backupClipboard();
         }
-        //backup the current clipboard
-//            try {
-//                script.previousClipboard = new StringSelection(((String) Toolkit.getDefaultToolkit()
-//                        .getSystemClipboard().getData(DataFlavor.stringFlavor)));
-//            } catch (UnsupportedFlavorException | IOException e) {
-//                e.printStackTrace();
-//            }
     }
 
     /**
@@ -161,30 +154,12 @@ public enum AvatarEffect {
         }
 
         //restore the previous clipboard.
-//        if (script.isRememberClipboard()) {
-//            System.out.println("this happens.");
-//            Keyboard.restoreClipboard();
-//        }
+        if (script.isRememberClipboard()) {
+            Keyboard.restoreClipboard();
+        }
+
         //indicate that we've finished running this script.
         script.setRunning(false);
-    }
-
-    /**
-     * Pends the thread for a given period in milliseconds.
-     * This method must be carefully called since misuse might lead to
-     * desynchronization issues, as this method trust that the thread its being called on
-     * is the thread it needs to {@link Thread#sleep(long)} for, thus, if its being called
-     * directly from an inappropriate thread, deadlocks might occur.
-     *
-     * @param ms the milliseconds to 'delay' for.
-     */
-    final synchronized void pend(int ms) {
-        try {
-//            System.out.println("Pending for: " + ms + "ms");
-            Thread.sleep(ms);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 
 }

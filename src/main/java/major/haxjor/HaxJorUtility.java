@@ -9,6 +9,7 @@ import java.util.logging.LogRecord;
 
 /**
  * Some static utility functions
+ *
  * @author Major
  */
 public final class HaxJorUtility {
@@ -20,11 +21,16 @@ public final class HaxJorUtility {
     /**
      * A shortened method for a simple expression, whether to send a debug message or not.
      * TODO this could be expanded by having debug levels
-     * @param message   the message to display
+     *
+     * @param message the message to display
      */
     public static void debug(String message) {
+        debug(() -> System.out.println(message));
+    }
+
+    public static void debug(Runnable runnable) {
         if (HaxJorSettings.DEBUG_MESSAGES) {
-            System.out.println(message);
+            runnable.run();
         }
     }
 
