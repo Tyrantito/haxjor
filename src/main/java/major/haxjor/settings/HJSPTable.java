@@ -4,8 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public final class HJSPTable {
+
     HJSPTable parent;//the table that links this table
-    HJSPTable[] childs;//the tables that are linked to this table
+    private HJSPTable[] childs;//the tables that are linked to this table
     String name;//indicate what table this is
     Map<String, HJSPObject> fields;//the fields of this table
 
@@ -20,17 +21,11 @@ public final class HJSPTable {
         HJSPTable[] prevChilds = childs;
         childs = new HJSPTable[++currentSize];
         System.arraycopy(prevChilds, 0, childs, 0, prevChilds.length);
-        //now we added a table ;o or does it override the last one?
         childs[childs.length - 1] = childTable;
     }
 
     public void setParent(HJSPTable parent) {
         this.parent = parent;
-    }
-
-    //parse the table
-    HJSPTable build(String[] lines) {
-        return this;
     }
 
     /**
@@ -47,5 +42,9 @@ public final class HJSPTable {
             firstParent = firstParent.parent;
         }
         return firstParent;
+    }
+
+    public HJSPTable[] getChilds() {
+        return childs;
     }
 }

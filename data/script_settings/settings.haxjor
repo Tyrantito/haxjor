@@ -6,7 +6,7 @@
             someInt = 100 #Simply a number.
             someLong = 5000000000000L #L defines long
             someDouble = 5.55D #D defines double
-            someFloat =  0.00004F #F defines float
+            someFloat =  0..04F #F defines float
             someBoolean = false #true or false
         </evenMore>
         toggle = $false

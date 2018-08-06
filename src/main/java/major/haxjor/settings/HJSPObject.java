@@ -46,15 +46,16 @@ public final class HJSPObject<T> {
             try {
                 if (data.endsWith("L")) {
                     //long
-                    set((T) Long.valueOf(Long.parseLong(data.substring(0, data.length() - 2))));
+                    set((T) Long.valueOf(Long.parseLong(data.substring(0, data.length() - 1))));
                     return;
                 } else if (data.endsWith("D")) {
                     //double
-                    set((T) Double.valueOf(Double.parseDouble(data.substring(0, data.length() - 2))));
+                    set((T) Double.valueOf(Double.parseDouble(data.substring(0, data.length() - 1))));
                     return;
                 } else if (data.endsWith("F")) {
+                    System.out.println("data: "+data.substring(0, data.length() - 1)+" //"+data.length()+"");
                     //float
-                    set((T) Float.valueOf(Float.parseFloat(data.substring(0, data.length() - 2))));
+                    set((T) Float.valueOf(Float.parseFloat(data.substring(0, data.length() - 1))));
                     return;
                 } else {
                     //int
