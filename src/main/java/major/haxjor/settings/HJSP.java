@@ -1,5 +1,7 @@
 package major.haxjor.settings;
 
+import major.haxjor.HaxJorSettings;
+import major.haxjor.HaxJorUtility;
 import major.haxjor.settings.exception.HJSPFigureException;
 import major.haxjor.settings.exception.HJSPSyntaxException;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -34,7 +36,7 @@ import static major.haxjor.HaxJorUtility.debug;
  * ##
  * anotherFieldName = anotherSomeValue
  * </p>
- *
+ * <p>
  * Furthermore, tables are now supported, so you can have as many tables as you want with the same namings in one file.
  *
  * <p>
@@ -86,7 +88,7 @@ public final class HJSP {
         float f = table.getFloat("somefloat");
         boolean b = table.getBoolean("someboolean");
 //
-        System.out.printf("i=%d, l=%d, d="+d+", f="+f+", b=%s\n", i, l, b);
+        System.out.printf("i=%d, l=%d, d=" + d + ", f=" + f + ", b=%s\n", i, l, b);
         //take in mind that sout operations take  time too so benchmark might not be as accurate. (rather faster)
         System.out.println("Time: " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) + "ms");
     }
@@ -213,11 +215,6 @@ public final class HJSP {
             }
         }
         throw new HJSPFigureException("No such table found: " + Arrays.toString(Arrays.stream(tables).limit(workingIndex + 1).collect(Collectors.toList()).toArray(new String[workingIndex])));
-
-//        System.out.println("now. "+workingTable.name);
-//        return workingTable;
-        //Nothing found :\
-//        throw new IllegalStateException("Okay this stage reached. " + workingTable.name + " " + workingIndex + " " + targetTable + " " + tables.length + " " + Arrays.toString(tables));
     }
 
 
@@ -294,65 +291,47 @@ public final class HJSP {
                 { //comment handling
                     //# ENDS THE LINE!
                     if (isLongComment) {
-//                        System.out.println("now trying: " + line);
-//                        System.out.println("a comment is long.");
                         if (line.endsWith("##")) {
-//                            System.out.println("a we finished the comment.");
                             isLongComment = false; //end of comment
                             //if there's still more chars after the end of comment then keep on reading the line.
                             if (!line.substring(line.lastIndexOf("#") + 1).isEmpty()) {
-//                                System.out.println("a this...");
                                 continue;
                             } else {
                                 //as the line continues after the comment we can keep on reading it
                                 line = line.substring(line.lastIndexOf("#") + 1);
-//                                System.out.println("a there: " + line);
                             }
                             //if we're already commenting out but we reach the end in the mid of the line
                         } else if (line.contains("##")) {
-//                            System.out.print("a long line with comment: "+line+"\n");
                             line = line.substring(line.lastIndexOf("#") + 1);
-//                            System.out.println("a what we actually see (long): " + line);
                             isLongComment = false;
                         } else {
-//                            System.out.println("e skip " + line + " " + line.contains("##"));
                             continue; // we will skip this line as its apart of the comment
                         }
                     }
                     if (line.startsWith("##")) { // long comment that we start.
-//                        System.out.println("this line starts as a comment, so easily pass on.");
                         isLongComment = true;
                         continue;
                     } else if (line.startsWith("#")) { //comment
-//                        System.out.println("this line stars as a short comment  so easily pass on");
                         continue;
                     }
                     if (line.contains("#")) {
                         //if line has a comment, read until the part of the line
-//                        System.out.print("line with comment: " + line + "\n");
                         line = line.substring(0, line.indexOf("#"));
-//                        System.out.println("what we actually see: " + line);
                     } else if (line.contains("##")) {
-//                        System.out.print("long line with comment: " + line + "\n");
                         line = line.substring(0, line.indexOf("#"));
-//                        System.out.println("what we actually see (long): " + line);
                         isLongComment = true;
                     }
                     if (isLongComment) {
-//                        System.out.println("comment is long.");
                         if (line.endsWith("##")) {
-//                            System.out.println("we finished the comment.");
                             isLongComment = false; //end of comment
                             //if there's still more chars after the end of comment then keep on reading the line.
                             if (!line.substring(line.lastIndexOf("#") + 1).isEmpty()) {
-//                                System.out.println("this...");
                                 continue;
                             } else {
                                 //as the line continues after the comment we can keep on reading it
                                 line = line.substring(line.lastIndexOf("#") + 1);
                             }
                         } else {
-//                            System.out.println("skip");
                             continue; // we will skip this line as its apart of the comment
                         }
                     }
@@ -369,7 +348,6 @@ public final class HJSP {
                         throw new HJSPSyntaxException("Wrong table closing. (Attempt: " + tableName + ", Found:  " + workingTable.name + ")", currentLine);
                     }
                     //now we return to work on the prev table
-//                    System.out.println("we finished working: " + workingTable.name + " now we set it to: " + workingTable.parent.name);
                     workingTable = workingTable.parent;
                     //we finished ending this table.
                     continue;
@@ -378,24 +356,20 @@ public final class HJSP {
                     if (tableName.contains("<") || tableName.contains(">")) {
                         throw new HJSPSyntaxException("Table can not have <, > in it's name.", currentLine);
                     }
-//                    System.out.println("Now we make a new table: " + tableName + ". parent: " + workingTable.name);
                     //this is a new table, we need to read its fields and its childs.
                     HJSPTable newTable = new HJSPTable(tableName);
                     //link this table to its parent
                     newTable.setParent(workingTable);
-//                    System.out.println("Table: " + newTable.name + ". parent: " + newTable.parent.name);
                     //here we link the new table to its parent table
                     workingTable.addChild(newTable);
                     //the table we're writing to is the new one now
                     workingTable = newTable;
-//                    System.out.println("now workingTable is: " + workingTable.name);
                     System.out.println();
                     //we made a table and linked to it, so from now on write to the table.
                     continue;
                     //end of table
                 } else {
                     //no childs. just create the fields normally
-//                    System.out.println("no childs :o " + currentLine);
                     root.fields = new HashMap<>();
                 }
                 //line must contain an equal mark
@@ -428,27 +402,25 @@ public final class HJSP {
                     throw new HJSPSyntaxException("Excepted end of Character but found \"" + value.indexOf(value.length() - 1) + "\" instead.", currentLine);
                     //if its not a boolean
                 } else if (!value.equalsIgnoreCase("true") && !value.equalsIgnoreCase("false")) {
-//                    if (!value.startsWith("\"")) {
-                        //any object that isn't a numeric value starts with $
-                        if (!(value.startsWith("$"))) {
-                            //non numberic
-                            if (!NumberUtils.isCreatable(value)) {
-                                //illegal char. TODO find out how to tell which char is the mismatching one.
-                                if (!value.matches("[a-zA-Z0-9$]*")) {
-                                    throw new HJSPSyntaxException("Illegal syntax found: \"" + value + "\".", currentLine);
-                                }
-                                throw new HJSPSyntaxException("Excepted numeric value but found \"" + value + "\" instead.", currentLine);
+                    //any object that isn't a numeric value starts with $
+                    if (!(value.startsWith("$"))) {
+                        //non numberic
+                        if (!NumberUtils.isCreatable(value)) {
+                            //illegal char. TODO find out how to tell which char is the mismatching one.
+                            if (!value.matches("[a-zA-Z0-9$]*")) {
+                                throw new HJSPSyntaxException("Illegal syntax found: \"" + value + "\".", currentLine);
                             }
-//                        }
+                            throw new HJSPSyntaxException("Excepted numeric value but found \"" + value + "\" instead.", currentLine);
+                        }
                     }
                 }
-//                System.out.println("added to table: " + workingTable.name + ": field=" + field + " value=" + value);
                 //add to the working table
                 workingTable.fields.put(field, new HJSPObject(currentLine, value));
 
-//                System.out.println();
-                //debug
-                whatWeParsed.append(workingTable.name).append(".").append(line).append("\n");
+                //the only critical time we use the direct setting to check if on debug mode and to append the string.
+                if (HaxJorSettings.DEBUG_MESSAGES) {
+                    whatWeParsed.append(workingTable.name).append(".").append(line).append("\n");
+                }
             }
             debug("We parsed:");
             debug(whatWeParsed.toString());
@@ -459,6 +431,4 @@ public final class HJSP {
         }
         return this;
     }
-
-
 }
