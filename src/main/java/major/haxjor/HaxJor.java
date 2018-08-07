@@ -24,6 +24,8 @@ import java.util.logging.Logger;
 import static major.haxjor.HaxJorSettings.SCRIPT_QUEUEING;
 import static major.haxjor.HaxJorUtility.debug;
 import static major.haxjor.HaxJorUtility.elapsedMs;
+import static major.haxjor.settings.HJSP.FILE_EXTENSION;
+import static major.haxjor.settings.HJSP.SCRIPT_BASE_PATH;
 
 /**
  * HaxJor is a HaxBall specialized program that offers various of useful utilities
@@ -265,7 +267,7 @@ public final class HaxJor {
                 HaxJorScript haxJorScript = script.getDeclaredConstructor().newInstance();
                 //build settings if required
                 if (scriptSettings.contains(script)) {
-                    HJSP.build(script.getAnnotation(HaxJorScriptSettings.SettingsFile.class).file()).parse();
+                    HJSP.build(SCRIPT_BASE_PATH.resolve(script.getAnnotation(HaxJorScriptSettings.SettingsFile.class).file()+FILE_EXTENSION).toString()).parse();
                 }
                 //initialize the script
                 haxJorScript.initialize();

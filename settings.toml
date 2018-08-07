@@ -1,9 +1,0 @@
-[general]
-###READ-ONLY###
- authors = [ "Major" ]
-
-[config]
-#Should debug messages appear? Quite a spam!
- debug_messages = false
-#Should we run a script queue rather than denying them when ones running?
- script_queue = true

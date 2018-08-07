@@ -1,15 +1,11 @@
 package major.haxjor.settings;
 
 import major.haxjor.HaxJorSettings;
-import major.haxjor.HaxJorUtility;
 import major.haxjor.settings.exception.HJSPFigureException;
 import major.haxjor.settings.exception.HJSPSyntaxException;
 import org.apache.commons.lang3.math.NumberUtils;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,61 +32,74 @@ import static major.haxjor.HaxJorUtility.debug;
  * ##
  * anotherFieldName = anotherSomeValue
  * </p>
- * <p>
- * Furthermore, tables are now supported, so you can have as many tables as you want with the same namings in one file.
  *
  * <p>
+ * Furthermore, tables are now supported, so you can have as many tables as you want with the same namings in one file.
+ * </p>
+ * <p>
  * <keyboard>
- *      <write>
- *          <evenMore> #yup, a table inside a table inside a table :)
- *              someString = "else" #A string
- *              someChar = 'a' #char
- *              someInt = 100 #simply a number.
- *              someLong = 5000000000000L #L defines long
- *              someDouble = 5.55D #D defines double
- *              someFloat =  0.00004F #F defines float
- *              someBoolean = false #true or false
- *          </evenMore>
- *          toggle = false; #is write function toggled?
- *      </write>
- *      <read>
- *          toggle = true; #is read function toggled?
- *      </read>
- *      toggle=true #is keyboard toggled?
+ * <write>
+ * <evenMore> #yup, a table inside a table inside a table :)
+ * someString = "else" #A string
+ * someChar = 'a' #char
+ * someInt = 100 #simply a number.
+ * someLong = 5000000000000L #L defines long
+ * someDouble = 5.55D #D defines double
+ * someFloat =  0.00004F #F defines float
+ * someBoolean = false #true or false
+ * </evenMore>
+ * toggle = false; #is write function toggled?
+ * </write>
+ * <read>
+ * toggle = true; #is read function toggled?
+ * </read>
+ * toggle=true #is keyboard toggled?
  * </keyboard>
  * </p>
  *
  * <p>
  * Currently supported types: All primitives (except short & byte, don't see it any necessary but simple to add) & Enums.
  * </p>
+ * <p>
+ * <p>
+ * TODO docs. bwahh
  *
  * @author Major
  */
 @SuppressWarnings("unchecked")
 public final class HJSP {
 
-    private static final String FILE_TYPE = ".haxjor";
+    /**
+     * The file extension for a setting file.
+     */
+    public static final String FILE_EXTENSION = ".haxjor";
 
-    private static final Path SCRIPT_BASE_PATH = Paths.get(".", "data", "script_settings");
+    /**
+     * The path where all script setting files are saved to.
+     */
+    public static final Path SCRIPT_BASE_PATH = Paths.get(".", "data", "script_settings");
 
     public static void main(String[] args) {
         long start = System.nanoTime();
-        HJSP hjsp = build("settings").acceptEmptyValues().parse();
+
+        HJSP hjsp = build("./settings.haxjor").acceptEmptyValues().parse();
+
 
         System.out.println("Took to build: " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) + "ms");
+        System.out.println(hjsp.get("general.authors")+" authors.");
         start = System.nanoTime();
-        HJSP table = hjsp.getTable("keyboard.write.evenMore");
+//        HJSP table = hjsp.getTable("keyboard.write.evenMore");
 
         //now all fields are called from the table "keyboard.write.evenMore"
-        int i = table.getInteger("someint");
-        long l = table.getLong("somelong");
-        double d = table.getDouble("somedouble");
-        float f = table.getFloat("somefloat");
-        boolean b = table.getBoolean("someboolean");
-//
-        System.out.printf("i=%d, l=%d, d=" + d + ", f=" + f + ", b=%s\n", i, l, b);
+//        int i = table.getInteger("someint");
+//        long l = table.getLong("somelong");
+//        double d = table.getDouble("somedouble");
+//        float f = table.getFloat("somefloat");
+//        boolean b = table.getBoolean("someboolean");
+
+//        System.out.printf("i=%d, l=%d, d=" + d + ", f=" + f + ", b=%s\n", i, l, b);
         //take in mind that sout operations take  time too so benchmark might not be as accurate. (rather faster)
-        System.out.println("Time: " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) + "ms");
+//        System.out.println("Time: " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) + "ms");
     }
 
     /**
@@ -101,11 +110,17 @@ public final class HJSP {
     /**
      * Build a setting and cache it.
      */
-    public static HJSP build(String fileName) {
+    public static HJSP build(String settingFile) {
+        if (!settingFile.endsWith(FILE_EXTENSION)) {
+            throw new IllegalArgumentException("Setting file must be a \"" + FILE_EXTENSION + "\" file-type.");
+        }
+        File file = new File(settingFile);
+        String fileName = file.getName();
+        System.out.println("name=" + fileName);
         if (CACHED_SETTINGS.containsKey(fileName)) {
             return CACHED_SETTINGS.get(fileName);
         }
-        HJSP hjsp = new HJSP(fileName);
+        HJSP hjsp = new HJSP(file, fileName);
         CACHED_SETTINGS.put(fileName, hjsp);
         return hjsp;
     }
@@ -113,25 +128,29 @@ public final class HJSP {
     /**
      * Get the settings of a file.
      */
-    public static HJSP settings(String fileName) {
+    public static HJSP of(String settingFile) {
+        String fileName = new File(settingFile).getName();
         if (!CACHED_SETTINGS.containsKey(fileName)) {
-            return build(fileName);
+            return build(settingFile);
         }
         return CACHED_SETTINGS.get(fileName);
     }
 
 
-    private HJSP(String fileName) {
-        this(fileName, new HJSPTable("root"));
+    private HJSP(File settingFile, String fileName) {
+        this(settingFile, fileName, new HJSPTable("root"));
     }
 
-    private HJSP(String fileName, HJSPTable root) {
+    private HJSP(File settingFile, String fileName, HJSPTable root) {
         this.root = root;
+        this.settingFile = settingFile;
         this.fileName = fileName;
     }
 
     //the root table. doesn't mean that it can not have a parent table!
     private HJSPTable root;
+    //the settings file
+    private final File settingFile;
     //keep the data of the fields
     private final String fileName;
     //can values be empty on initialization?
@@ -263,7 +282,7 @@ public final class HJSP {
      * Copy with a new root
      */
     public final HJSP copy(HJSPTable root) {
-        HJSP newCopy = new HJSP(fileName, root);
+        HJSP newCopy = new HJSP(settingFile, fileName, root);
         if (acceptEmptyValues) {
             newCopy.acceptEmptyValues();
         }
@@ -274,7 +293,7 @@ public final class HJSP {
      * Parse the file and check for syntax issues.
      */
     public HJSP parse() {
-        try (BufferedReader reader = new BufferedReader(new FileReader(SCRIPT_BASE_PATH.resolve(fileName + FILE_TYPE).toFile()))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(settingFile))) {
             StringBuilder whatWeParsed = new StringBuilder();
             String line;
             boolean isLongComment = false; // if we do "##" we have a multiple line of comment.
@@ -289,51 +308,56 @@ public final class HJSP {
                     continue;
                 }
                 { //comment handling
-                    //# ENDS THE LINE!
+                    //this line is already apart of the block comment
                     if (isLongComment) {
                         if (line.endsWith("##")) {
                             isLongComment = false; //end of comment
                             //if there's still more chars after the end of comment then keep on reading the line.
-                            if (!line.substring(line.lastIndexOf("#") + 1).isEmpty()) {
+                            if (line.substring(line.lastIndexOf("##")+2).isEmpty()) {
                                 continue;
                             } else {
                                 //as the line continues after the comment we can keep on reading it
-                                line = line.substring(line.lastIndexOf("#") + 1);
+                                line = line.substring(line.lastIndexOf("##")+2);
                             }
                             //if we're already commenting out but we reach the end in the mid of the line
                         } else if (line.contains("##")) {
-                            line = line.substring(line.lastIndexOf("#") + 1);
+                            line = line.substring(line.lastIndexOf("##")+2);
                             isLongComment = false;
                         } else {
+//                            System.out.println("broken lol: "+line);
                             continue; // we will skip this line as its apart of the comment
                         }
                     }
                     if (line.startsWith("##")) { // long comment that we start.
+                        //what if we also end it on the same line?
                         isLongComment = true;
-                        continue;
+                        if (!line.endsWith("##")) {
+                            if (line.contains("##")) {
+                                isLongComment = false; //end of comment
+                                //if there's still more chars after the end of comment then keep on reading the line.
+                                if (line.substring(line.lastIndexOf("##")+2).isEmpty()) {
+                                    continue;
+                                } else {
+                                    //as the line continues after the comment we can keep on reading it
+                                    line = line.substring(line.lastIndexOf("##")+2);
+                                }
+                            } else {
+                                continue; // we will skip this line as its apart of the comment
+                            }
+                        } else {
+                            isLongComment = false;
+                            continue;
+                        }
                     } else if (line.startsWith("#")) { //comment
                         continue;
                     }
+                    //comment starts from mid
                     if (line.contains("#")) {
                         //if line has a comment, read until the part of the line
                         line = line.substring(0, line.indexOf("#"));
                     } else if (line.contains("##")) {
                         line = line.substring(0, line.indexOf("#"));
                         isLongComment = true;
-                    }
-                    if (isLongComment) {
-                        if (line.endsWith("##")) {
-                            isLongComment = false; //end of comment
-                            //if there's still more chars after the end of comment then keep on reading the line.
-                            if (!line.substring(line.lastIndexOf("#") + 1).isEmpty()) {
-                                continue;
-                            } else {
-                                //as the line continues after the comment we can keep on reading it
-                                line = line.substring(line.lastIndexOf("#") + 1);
-                            }
-                        } else {
-                            continue; // we will skip this line as its apart of the comment
-                        }
                     }
                 }
                 //we make a relation. this means that fields can be linked to a relation table, and thus allow multi settings on a single file
@@ -351,7 +375,7 @@ public final class HJSP {
                     workingTable = workingTable.parent;
                     //we finished ending this table.
                     continue;
-                } else if (line.replaceAll(" ", "").startsWith("<") && line.contains(">")) {
+                } else if (line.startsWith("<") && line.contains(">")) {
                     final String tableName = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
                     if (tableName.contains("<") || tableName.contains(">")) {
                         throw new HJSPSyntaxException("Table can not have <, > in it's name.", currentLine);
@@ -364,7 +388,6 @@ public final class HJSP {
                     workingTable.addChild(newTable);
                     //the table we're writing to is the new one now
                     workingTable = newTable;
-                    System.out.println();
                     //we made a table and linked to it, so from now on write to the table.
                     continue;
                     //end of table
@@ -410,7 +433,12 @@ public final class HJSP {
                             if (!value.matches("[a-zA-Z0-9$]*")) {
                                 throw new HJSPSyntaxException("Illegal syntax found: \"" + value + "\".", currentLine);
                             }
-                            throw new HJSPSyntaxException("Excepted numeric value but found \"" + value + "\" instead.", currentLine);
+                            throw new HJSPSyntaxException("Excepted numeric value but found \"" + value + "\" instead\nHint: If you're excepting an object, put \"$\" beforehand.", currentLine);
+                        }
+                    } else {
+                        //true or false does not require $ at the start
+                        if (value.substring(value.indexOf("$")+1).toLowerCase().contains("true") || value.substring(value.indexOf("$")+1).toLowerCase().contains("false")) {
+                            throw new HJSPSyntaxException("True / False statements should not have a \"$\" sign beforehand.", currentLine);
                         }
                     }
                 }
@@ -424,9 +452,15 @@ public final class HJSP {
             }
             debug("We parsed:");
             debug(whatWeParsed.toString());
-        } catch (FileNotFoundException f) {
+        } catch (
+                FileNotFoundException f)
+
+        {
             throw new IllegalStateException("No file found to parse.");
-        } catch (IOException e) {
+        } catch (
+                IOException e)
+
+        {
             e.printStackTrace();
         }
         return this;
