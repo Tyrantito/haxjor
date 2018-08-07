@@ -1,8 +1,10 @@
 package major.haxjor.settings;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+//TODO override  #equals, #hashCode, #toString.
 public final class HJSPTable {
 
     HJSPTable parent;//the table that links this table
@@ -28,10 +30,14 @@ public final class HJSPTable {
         this.parent = parent;
     }
 
+    public HJSPTable getParent() {
+        return parent;
+    }
+
     /**
      * Get the root table of this table.
      */
-    HJSPTable getRoot() {
+    HJSPTable getFirstParent() {
         HJSPTable firstParent = this.parent;
         //if no parent..
         if (firstParent == null) {
@@ -46,5 +52,39 @@ public final class HJSPTable {
 
     public HJSPTable[] getChilds() {
         return childs;
+    }
+
+    //performance killer?
+    @Override
+    public boolean equals(Object other) {
+        if (!(other instanceof HJSPTable)) {
+            return false;
+        }
+        HJSPTable otherTable = (HJSPTable) other;
+        //first all cheap operations
+        if (childs.length != ((HJSPTable) other).childs.length) {
+            return false;
+        }
+        if (!name.equals(otherTable.name)) {
+            return false;
+        }
+        if (fields.size() != otherTable.fields.size()) {
+            return false;
+        }
+        //then all heavy operations
+        if (fields.equals(otherTable.fields)) {
+            return false;
+        }
+        for (int i = 0; i < childs.length; i++) {
+            if (!childs[i].equals(otherTable.childs[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("parent=%s, fields=%s, childs=%d", parent.name, Arrays.toString(fields.keySet().toArray()), childs.length);
     }
 }

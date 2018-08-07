@@ -1,6 +1,5 @@
 package major.haxjor;
 
-import com.moandjiezana.toml.Toml;
 import major.haxjor.settings.HJSP;
 
 import java.nio.file.Paths;
@@ -15,7 +14,8 @@ public final class HaxJorSettings {
     /**
      * Some static settings for the system.
      */
-    private static final HJSP SETTINGS_PARSER = HJSP.of((Paths.get(".", "settings.haxjor").toString())).parse();
+    private static final HJSP SETTINGS_PARSER = HJSP.of((Paths.get(".", "settings.haxjor").toString())).acceptEmptyValues().parse();
+
     /**
      * Scripts can not run concurrently, thus, we could either queue submitted scripts and run them sequentially
      * or rather deny them when submitted.

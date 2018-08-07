@@ -1,5 +1,5 @@
 <general>
-##This is a block comment, but anything after the end of the block  will continue reading.## authors = "Major" #currently no array support. btw, this comment isn't parsed either.
+##This is a block comment, but anything after the end of the block will continue reading.## authors = "Major" #currently no array support. btw, this comment isn't parsed either.
 </general>
 
 <config>
@@ -7,6 +7,4 @@
  debug_messages = true
 #Should we run a script queue rather than denying them when ones running?
  script_queue = true
-
- avatarSpeed = $FAST
 </config>

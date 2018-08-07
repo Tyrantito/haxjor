@@ -2,6 +2,7 @@ package major.haxjor.settings;
 
 import major.haxjor.HaxJorSettings;
 import major.haxjor.settings.exception.HJSPFigureException;
+import major.haxjor.settings.exception.HJSPNonInitializedFieldException;
 import major.haxjor.settings.exception.HJSPSyntaxException;
 import org.apache.commons.lang3.math.NumberUtils;
 
@@ -13,6 +14,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static major.haxjor.HaxJorUtility.debug;
@@ -86,7 +89,7 @@ public final class HJSP {
 
 
         System.out.println("Took to build: " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) + "ms");
-        System.out.println(hjsp.get("general.authors")+" authors.");
+        System.out.println(hjsp.get("general.authors") + " authors.");
         start = System.nanoTime();
 //        HJSP table = hjsp.getTable("keyboard.write.evenMore");
 
@@ -103,67 +106,139 @@ public final class HJSP {
     }
 
     /**
-     * Cache of settings
+     * The cache of all settings instances,
+     * whereas the file path returns the applicable {@link HJSP} file.
      */
     private static final Map<String, HJSP> CACHED_SETTINGS = new HashMap<>();
 
     /**
-     * Build a setting and cache it.
+     * Build a new instance by the setting file path and cache it.
+     * If an <code>settingPath</code> already exists, but either not linked to a setting parser or rather have a null value,
+     * we will create a new instance and return it.
+     *
+     * @param settingPath the setting file path, also used as the key for grabbing cached values.
+     * @return the new instance of this setting parser.
+     * @see Map#computeIfAbsent(Object, Function)   for relocating the instance
      */
-    public static HJSP build(String settingFile) {
-        if (!settingFile.endsWith(FILE_EXTENSION)) {
-            throw new IllegalArgumentException("Setting file must be a \"" + FILE_EXTENSION + "\" file-type.");
+    public static HJSP build(String settingPath) {
+        if (!settingPath.endsWith(FILE_EXTENSION)) {
+            throw new IllegalArgumentException("Setting path must be a \"" + FILE_EXTENSION + "\" file-type.");
         }
-        File file = new File(settingFile);
-        String fileName = file.getName();
-        System.out.println("name=" + fileName);
-        if (CACHED_SETTINGS.containsKey(fileName)) {
-            return CACHED_SETTINGS.get(fileName);
+        File settingFile = new File(settingPath);
+        if (CACHED_SETTINGS.containsKey(settingPath)) {
+            return CACHED_SETTINGS.computeIfAbsent(settingPath, ignore -> new HJSP(settingFile));
         }
-        HJSP hjsp = new HJSP(file, fileName);
-        CACHED_SETTINGS.put(fileName, hjsp);
+        HJSP hjsp = new HJSP(settingFile);
+        CACHED_SETTINGS.put(settingPath, hjsp);
         return hjsp;
     }
 
     /**
-     * Get the settings of a file.
+     * Build and then instantly parse the file.
+     * Note: One shouldn't use this if they aim to use {@link #acceptEmptyValues()} or etceteras,
+     * since these do only take effect before using {@link #parse()}
+     *
+     * @param settingPath the setting file path, also used as the key for grabbing cached values.
+     * @return the new instance of this setting parser.
      */
-    public static HJSP of(String settingFile) {
-        String fileName = new File(settingFile).getName();
-        if (!CACHED_SETTINGS.containsKey(fileName)) {
-            return build(settingFile);
-        }
-        return CACHED_SETTINGS.get(fileName);
+    public static HJSP buildAndParse(String settingPath) {
+        return build(settingPath).parse();
     }
 
-
-    private HJSP(File settingFile, String fileName) {
-        this(settingFile, fileName, new HJSPTable("root"));
+    /**
+     * Attempts to peek into the {@link #CACHED_SETTINGS} in order to find an existing instance
+     * of a {@link HJSP}. If absent, create a new instance and cache it.
+     */
+    public static HJSP of(String fileName) {
+        return CACHED_SETTINGS.computeIfAbsent(fileName, HJSP::build);
     }
 
-    private HJSP(File settingFile, String fileName, HJSPTable root) {
+    /**
+     * Create a new instance of a setting parser, with a default {@link HJSPTable}.
+     * Associates the setting file with the instance.
+     *
+     * @param settingFile the file that the settings are stored into.
+     */
+    private HJSP(File settingFile) {
+        this(settingFile, new HJSPTable("root"));
+    }
+
+    /**
+     * Creates a new instance of a setting parser, with a given {@link HJSPTable}.
+     * This is originally used when grabbing a table of an existing settting parser,
+     * whereas the original instance is being {@link #copy(HJSPTable)} but the table is overridden with one of its child tables (In most cases).
+     * This practice allows a linked-node system design. Example:
+     *
+     * <p>
+     * //the main, first table.
+     * HJSP root = new HJSP("./settings.haxjor");
+     * <p>
+     * //a child table inside #root
+     * HJSP child = root.getTable("child");
+     * <p>
+     * //the child's first parent (the very first parent table, not the previous parent!)
+     * HJSP childsRoot = child.root.getFirstParent();
+     * <p>
+     * //the child's root is obviously root.
+     * assert childsRoot.equals(root);
+     * </p>
+     *
+     * @param settingFile the setting file instance, would help us with {@link #parse()} the file
+     * @param root        the root table for this instance. Usually, by default, we're given "root" as the root table.
+     */
+    private HJSP(File settingFile, HJSPTable root) {
         this.root = root;
         this.settingFile = settingFile;
-        this.fileName = fileName;
     }
 
-    //the root table. doesn't mean that it can not have a parent table!
+    /**
+     * The root parent of this instance.
+     * This does not mean that it is the main root (the first parent) of all tables,
+     * but rather the root of the specific instance, which makes sense as {@link #getTable(String)} is used
+     * as an inherited child-table off the root, which makes it become the root table, allowing shorten calls.
+     */
     private HJSPTable root;
-    //the settings file
+
+    /**
+     * The setting file, which is used to {@link #parse()} the data of settings.
+     */
     private final File settingFile;
-    //keep the data of the fields
-    private final String fileName;
+
     //can values be empty on initialization?
+    /**
+     * Indicates whether values of fields can be empty upon initialization, and assigned later.
+     * However, do <b>NOT</b> call {@link HJSPObject#get()} when value isn't initialized since
+     * you will receive a {@link HJSPNonInitializedFieldException} saying "Field has no value yet".
+     */
     private boolean acceptEmptyValues;
 
     /**
-     * Should we allow initializing with empty values? this might cause issues when attempting to call #get methods
+     * TODO
+     * Indicates that the values of fields are immutable and can not be changed after being initialized.
      */
+    private boolean immutableValues;
+
     public final HJSP acceptEmptyValues() {
         this.acceptEmptyValues = true;
         return this;
     }
 
+    /**
+     * Grabs the value of the given <code>field</code>.
+     * This method knows how to figure out the path to the table throughout the given
+     * routine, however, <code>field</code> could be passed as solely the field without
+     * any tables to look into, which the method knows how to resolve and find it accordingly.
+     * <p>
+     * Once the appropriate table is found, we continue to find out if the <code>field</code>
+     * exists in the {@link HJSPTable#fields}, and if it is, but not {@link HJSPObject#init)},
+     * it will initialize it, cache the value and then return the value of the given field.
+     *
+     * @param field the path to the field. I.E "keyboard.write.toggle" whereas "toggle" is the field, and "keyboard.write" is the path.
+     * @param type  the class type that the value is suppose to be created as.
+     * @param <T>   the generic class type that the value is returned as.
+     * @return the value of the field
+     * @throws HJSPFigureException the table has no fields.
+     */
     public <T> T get(String field, Class type) {
         HJSPTable workingTable = figureFieldInTable(field);
 
@@ -282,7 +357,7 @@ public final class HJSP {
      * Copy with a new root
      */
     public final HJSP copy(HJSPTable root) {
-        HJSP newCopy = new HJSP(settingFile, fileName, root);
+        HJSP newCopy = new HJSP(settingFile, root);
         if (acceptEmptyValues) {
             newCopy.acceptEmptyValues();
         }
@@ -313,18 +388,17 @@ public final class HJSP {
                         if (line.endsWith("##")) {
                             isLongComment = false; //end of comment
                             //if there's still more chars after the end of comment then keep on reading the line.
-                            if (line.substring(line.lastIndexOf("##")+2).isEmpty()) {
+                            if (line.substring(line.lastIndexOf("##") + 2).isEmpty()) {
                                 continue;
                             } else {
                                 //as the line continues after the comment we can keep on reading it
-                                line = line.substring(line.lastIndexOf("##")+2);
+                                line = line.substring(line.lastIndexOf("##") + 2);
                             }
                             //if we're already commenting out but we reach the end in the mid of the line
                         } else if (line.contains("##")) {
-                            line = line.substring(line.lastIndexOf("##")+2);
+                            line = line.substring(line.lastIndexOf("##") + 2);
                             isLongComment = false;
                         } else {
-//                            System.out.println("broken lol: "+line);
                             continue; // we will skip this line as its apart of the comment
                         }
                     }
@@ -335,11 +409,11 @@ public final class HJSP {
                             if (line.contains("##")) {
                                 isLongComment = false; //end of comment
                                 //if there's still more chars after the end of comment then keep on reading the line.
-                                if (line.substring(line.lastIndexOf("##")+2).isEmpty()) {
+                                if (line.substring(line.lastIndexOf("##") + 2).isEmpty()) {
                                     continue;
                                 } else {
                                     //as the line continues after the comment we can keep on reading it
-                                    line = line.substring(line.lastIndexOf("##")+2);
+                                    line = line.substring(line.lastIndexOf("##") + 2);
                                 }
                             } else {
                                 continue; // we will skip this line as its apart of the comment
@@ -356,7 +430,8 @@ public final class HJSP {
                         //if line has a comment, read until the part of the line
                         line = line.substring(0, line.indexOf("#"));
                     } else if (line.contains("##")) {
-                        line = line.substring(0, line.indexOf("#"));
+                        //TODO this might be bugged line. indexOf("##")
+                        line = line.substring(0, line.indexOf("##"));
                         isLongComment = true;
                     }
                 }
@@ -437,7 +512,7 @@ public final class HJSP {
                         }
                     } else {
                         //true or false does not require $ at the start
-                        if (value.substring(value.indexOf("$")+1).toLowerCase().contains("true") || value.substring(value.indexOf("$")+1).toLowerCase().contains("false")) {
+                        if (value.substring(value.indexOf("$") + 1).toLowerCase().contains("true") || value.substring(value.indexOf("$") + 1).toLowerCase().contains("false")) {
                             throw new HJSPSyntaxException("True / False statements should not have a \"$\" sign beforehand.", currentLine);
                         }
                     }
@@ -452,15 +527,9 @@ public final class HJSP {
             }
             debug("We parsed:");
             debug(whatWeParsed.toString());
-        } catch (
-                FileNotFoundException f)
-
-        {
+        } catch (FileNotFoundException f) {
             throw new IllegalStateException("No file found to parse.");
-        } catch (
-                IOException e)
-
-        {
+        } catch (IOException e) {
             e.printStackTrace();
         }
         return this;

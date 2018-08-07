@@ -3,11 +3,12 @@ package major.haxjor.settings;
 import major.haxjor.settings.exception.HJSPFigureException;
 import major.haxjor.settings.exception.HJSPNonInitializedFieldException;
 
+@SuppressWarnings("unchecked")
 public final class HJSPObject<T> {
-    int line; //what line this object is located at on the file
+    private int line; //what line this object is located at on the file
     boolean init; //have we initialized this object yet
     String data; // the field data (aka value)
-    T t;
+    private T t;
 
     HJSPObject(int line, String data) {
         this.line = line;
@@ -69,7 +70,6 @@ public final class HJSPObject<T> {
                     return;
                 }
             }
-
         }
     }
 
@@ -88,5 +88,28 @@ public final class HJSPObject<T> {
         } else {
             return this.t;
         }
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (!(other instanceof HJSPObject)) {
+            return false;
+        }
+        HJSPObject otherObject = (HJSPObject) other;
+        if (line != otherObject.line) {
+            return false;
+        }
+        //does it matter if we initialized? TODO shouldn't be
+        if (init != otherObject.init) {
+            return false;
+        }
+        if (!data.equals(otherObject.data)) {
+            return false;
+        }
+        if (!t.equals(otherObject.t)) {
+            System.out.println("This might be a failure since all objects must have a proper #equals comparation");
+            return false;
+        }
+        return true;
     }
 }
