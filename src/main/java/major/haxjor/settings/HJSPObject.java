@@ -42,6 +42,11 @@ public final class HJSPObject<T> {
             }
             Character finalField = parsedChar.charAt(0);
             set((T) finalField);
+        } else if (data.startsWith("$")) {
+            data = data.substring(data.indexOf("$") + 1);
+            if (data.isEmpty()) {
+                throw new HJSPFigureException("Excepted any reference but no value assigned.", line);
+            }
         } else {
             //try parsing numberic fields
             try {
@@ -54,7 +59,7 @@ public final class HJSPObject<T> {
                     set((T) Double.valueOf(Double.parseDouble(data.substring(0, data.length() - 1))));
                     return;
                 } else if (data.endsWith("F")) {
-                    System.out.println("data: "+data.substring(0, data.length() - 1)+" //"+data.length()+"");
+                    System.out.println("data: " + data.substring(0, data.length() - 1) + " //" + data.length() + "");
                     //float
                     set((T) Float.valueOf(Float.parseFloat(data.substring(0, data.length() - 1))));
                     return;

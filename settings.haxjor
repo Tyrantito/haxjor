@@ -4,6 +4,7 @@
 
 <config>
 #Should debug messages appear? Quite a spam!
+ avatarSpeed = $FAST
  debug_messages = true
 #Should we run a script queue rather than denying them when ones running?
  script_queue = true

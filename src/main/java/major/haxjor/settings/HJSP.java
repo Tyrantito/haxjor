@@ -1,6 +1,7 @@
 package major.haxjor.settings;
 
 import major.haxjor.HaxJorSettings;
+import major.haxjor.script.impl.avatar.AvatarSpeed;
 import major.haxjor.settings.exception.HJSPFigureException;
 import major.haxjor.settings.exception.HJSPNonInitializedFieldException;
 import major.haxjor.settings.exception.HJSPSyntaxException;
@@ -13,6 +14,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
 import static major.haxjor.HaxJorUtility.debug;
 
 /**
+ * TODO Atm fields are non-case sensitive.
  * Custom settings system that parses fields completely reflectively.
  * Syntax goes as easy as this:
  * <p>
@@ -90,6 +93,7 @@ public final class HJSP {
 
         System.out.println("Took to build: " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) + "ms");
         System.out.println(hjsp.get("general.authors") + " authors.");
+        System.out.println(hjsp.get("config.avatarspeed", AvatarSpeed.class) + " blablabla speed");
         start = System.nanoTime();
 //        HJSP table = hjsp.getTable("keyboard.write.evenMore");
 
@@ -109,7 +113,7 @@ public final class HJSP {
      * The cache of all settings instances,
      * whereas the file path returns the applicable {@link HJSP} file.
      */
-    private static final Map<String, HJSP> CACHED_SETTINGS = new HashMap<>();
+    private static final Map<String, HJSP> CACHED_SETTINGS = new ConcurrentHashMap<>();
 
     /**
      * Build a new instance by the setting file path and cache it.
@@ -150,7 +154,7 @@ public final class HJSP {
      * of a {@link HJSP}. If absent, create a new instance and cache it.
      */
     public static HJSP of(String fileName) {
-        return CACHED_SETTINGS.computeIfAbsent(fileName, HJSP::build);
+        return CACHED_SETTINGS.computeIfAbsent(fileName, k -> new HJSP(new File(fileName)));
     }
 
     /**
@@ -241,31 +245,71 @@ public final class HJSP {
      */
     public <T> T get(String field, Class type) {
         HJSPTable workingTable = figureFieldInTable(field);
-
         if (workingTable.fields.isEmpty()) {
             throw new HJSPFigureException("Table (" + workingTable.name + ") has no fields");
         }
-        if (!workingTable.fields.get(field).init) {
-            figureAndCache(field, type);
+        final String targetField = getTargetField(field);
+        HJSPObject targetObject = workingTable.fields.get(targetField);
+        if (targetObject == null) {
+            System.out.println(targetField+" :: "+workingTable.fields);
         }
-        return (T) workingTable.fields.get(field).get();
+        if (!targetObject.init) {
+            figureAndCache(workingTable, targetField, type);
+        }
+        return (T) targetObject.get();
     }
 
     //since we already premade primitive types, this function doesn't need to try re-parse them again and use existing values.
+
+    /**
+     * Grabs the value of the given <code>field</code>.
+     * However, as this method might seem to be similar to {@link #get(String, Class)},
+     * the major difference is that this method do not use {@link #figureAndCache(String, Class)}
+     * so it doesn't try to parse the field if no value assigned to it, the reason for that
+     * is that we use pre-parsing for primitive fields, such as <code>String</code> or a <code>Integer</code>,
+     * since we can parse it easily, this process saves us time on the future so we can use this method
+     * to easily grab these kind of field's values. Despite that, we can not use this method to call
+     * for non-primitive objects, such as an Enum or a Class, the reason for that is since we use reflective
+     * we need to know what kind of object we are calling to, which isn't provided here but rather through
+     * the method {@link #get(String, Class)}, whom allows you to get field's values that are reflective based.
+     * If you'll use this method to try getting fields that are reflective based, you'll most likely receive
+     * an unresponsive exception such as {@link HJSPNonInitializedFieldException} exception, which as it might
+     * seem to be unnatural exception, the field is actually never initialized because we wouldn't know how to parse it.
+     *
+     * @param field the path to the field. I.E "keyboard.write.toggle" whereas "toggle" is the field, and "keyboard.write" is the path.
+     * @param <T>   the generic class type that the value is returned as.
+     * @return the value of the field
+     * @throws NullPointerException the table has no fields.
+     */
     private <T> T get(String field) {
         HJSPTable workingTable = figureFieldInTable(field);
-        String[] tables = field.split("\\.");
-        final String targetField = tables[tables.length - 1];
+        final String targetField = getTargetField(field);
         if (workingTable.fields.containsKey(targetField)) {
             return (T) workingTable.fields.get(targetField).get();
         }
         throw new NullPointerException("No such field \"" + targetField + "\" on table " + workingTable.name + ".");
     }
 
+    /**
+     * Returns the accepted target field given by the path.
+     * Basically, it returns the last argument of the path.
+     *
+     * @param field the path to the field
+     * @return the target field
+     */
+    private String getTargetField(String field) {
+        final String[] tables = field.split("\\.");
+        return tables[tables.length - 1].toLowerCase();//all fields are non-case sensitive
+    }
+
     //here we create the object and cache. (TODO can be void? // should probably not change since we might add support for instancing classes)
     private <T> T figureAndCache(String fieldName, Class type) {
+        return figureAndCache(root, fieldName, type);
+    }
+
+    private <T> T figureAndCache(HJSPTable table, String fieldName, Class type) {
         //we get the hjspobject by the field
-        HJSPObject hjspObject = root.fields.get(fieldName);
+        HJSPObject hjspObject = table.fields.get(fieldName);
         try {
             if (type.isEnum()) {
                 Field field = type.getField(hjspObject.data);
