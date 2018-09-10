@@ -6,7 +6,7 @@ import major.haxjor.settings.exception.HJSPNonInitializedFieldException;
 @SuppressWarnings("unchecked")
 public final class HJSPObject<T> {
     private int line; //what line this object is located at on the file
-    boolean init; //have we initialized this object yet
+    boolean init; //have we initialized this object yet. this ensures objects immutability
     String data; // the field data (aka value)
     private T t;
 

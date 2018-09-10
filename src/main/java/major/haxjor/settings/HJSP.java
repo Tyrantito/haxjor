@@ -14,6 +14,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -217,16 +218,9 @@ public final class HJSP {
     private boolean acceptEmptyValues;
 
     /**
-     * TODO
-     * Indicates that the values of fields are immutable and can not be changed after being initialized.
-     */
-    private boolean immutableValues;
-
-    /**
      * Should we allow returning null values, i.e when field is not found, or rather throw an exception?
      */
     private boolean returnNullValues;
-
 
     public final HJSP acceptEmptyValues() {
         this.acceptEmptyValues = true;
@@ -234,14 +228,10 @@ public final class HJSP {
     }
 
     public final HJSP returnNullValues() {
-        this.immutableValues = true;
-        return this;
-    }
-
-    public final HJSP immutableValues() {
         this.returnNullValues = true;
         return this;
     }
+
     /**
      * Grabs the value of the given <code>field</code>.
      * This method knows how to figure out the path to the table throughout the given
@@ -265,12 +255,14 @@ public final class HJSP {
         }
         final String targetField = getTargetField(field);
         HJSPObject targetObject = workingTable.fields.get(targetField);
-
         //should throw exception or null?
         if (targetObject == null) {
-            throw new HJSPFigureException("Field: " + targetField + " couldn't be found in file: " + settingFile.getName());
+            if (!returnNullValues) {
+                throw new HJSPFigureException("No such field \"" + targetField + "\" on table " + workingTable.name + ".");
+            } else {
+                return null;
+            }
         }
-
         if (!targetObject.init) {
             figureAndCache(workingTable, targetField, type);
         }
@@ -303,8 +295,13 @@ public final class HJSP {
         final String targetField = getTargetField(field);
         if (workingTable.fields.containsKey(targetField)) {
             return (T) workingTable.fields.get(targetField).get();
+        } else {
+            if (!returnNullValues) {
+                throw new HJSPFigureException("No such field \"" + targetField + "\" on table " + workingTable.name + ".");
+            } else {
+                return null;
+            }
         }
-        throw new NullPointerException("No such field \"" + targetField + "\" on table " + workingTable.name + ".");
     }
 
     /**
@@ -356,7 +353,8 @@ public final class HJSP {
         }
     }
 
-    private final HJSPTable findTable(HJSPTable workingTable, int workingIndex, final String targetTable, final String[] tables) {
+    private final HJSPTable findTable(HJSPTable workingTable, int workingIndex, final String targetTable,
+                                      final String[] tables) {
         for (HJSPTable wtChild : workingTable.getChilds()) {
             //keep getting the next root
             if (wtChild.name.equalsIgnoreCase(targetTable)) {
