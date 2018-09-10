@@ -222,11 +222,26 @@ public final class HJSP {
      */
     private boolean immutableValues;
 
+    /**
+     * Should we allow returning null values, i.e when field is not found, or rather throw an exception?
+     */
+    private boolean returnNullValues;
+
+
     public final HJSP acceptEmptyValues() {
         this.acceptEmptyValues = true;
         return this;
     }
 
+    public final HJSP returnNullValues() {
+        this.immutableValues = true;
+        return this;
+    }
+
+    public final HJSP immutableValues() {
+        this.returnNullValues = true;
+        return this;
+    }
     /**
      * Grabs the value of the given <code>field</code>.
      * This method knows how to figure out the path to the table throughout the given
@@ -250,16 +265,18 @@ public final class HJSP {
         }
         final String targetField = getTargetField(field);
         HJSPObject targetObject = workingTable.fields.get(targetField);
+
+        //should throw exception or null?
         if (targetObject == null) {
-            System.out.println(targetField+" :: "+workingTable.fields);
+            throw new HJSPFigureException("Field: " + targetField + " couldn't be found in file: " + settingFile.getName());
         }
+
         if (!targetObject.init) {
             figureAndCache(workingTable, targetField, type);
         }
         return (T) targetObject.get();
     }
 
-    //since we already premade primitive types, this function doesn't need to try re-parse them again and use existing values.
 
     /**
      * Grabs the value of the given <code>field</code>.

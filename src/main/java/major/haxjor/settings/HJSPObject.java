@@ -95,6 +95,8 @@ public final class HJSPObject<T> {
         }
     }
 
+    //TODO hashCode
+    //TODO test hash & equal fucntions
     @Override
     public boolean equals(Object other) {
         if (!(other instanceof HJSPObject)) {

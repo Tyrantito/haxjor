@@ -72,6 +72,7 @@ public final class HJSPTable {
             return false;
         }
         //then all heavy operations
+        //TODO need 2 loop every entry and compare
         if (fields.equals(otherTable.fields)) {
             return false;
         }
