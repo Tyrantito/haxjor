@@ -420,6 +420,9 @@ public final class HJSP {
         if (acceptEmptyValues) {
             newCopy.acceptEmptyValues();
         }
+        if (returnNullValues) {
+            newCopy.returnNullValues();
+        }
         return newCopy;
     }
 
