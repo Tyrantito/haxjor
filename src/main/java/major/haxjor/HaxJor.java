@@ -31,7 +31,7 @@ import static major.haxjor.settings.HJSP.SCRIPT_BASE_PATH;
  * HaxJor is a HaxBall specialized program that offers various of useful utilities
  * that may lead to an unfair advantage over the average user.
  * Some notable features that differs the program from the rest are:
- * Avatar script, Reliable Auto-clicker & Marcos and more...
+ * Avatar script (Discontinued), Reliable Auto-clicker & Marcos and more...
  * While all of the features are completely modifiable, the program also ensures to be lightweight and consume close
  * to no system effort and thus ensure that your Haxball experience remains as smooth as possible.
  * <p>
@@ -179,9 +179,7 @@ public final class HaxJor {
     //attempt to run the script, and then handle the queue.
     //this must run synchronously, since we might reach a deadlock due to using recursive calling.
     public synchronized static void runScript(HaxJorScript script) {
-        //are we running a script atm?
-        if (script == null)
-            throw new NullPointerException("script is null.");
+        Objects.requireNonNull(script);
 
         //are we currently doing any script-related action?
         if (firingEvents) {
@@ -273,7 +271,7 @@ public final class HaxJor {
                 haxJorScript.initialize();
                 //if a keyboard script, cache the indicator linked to this script.
                 if (haxJorScript instanceof KeyboardJNativeListener) {
-                    //whats null means that we don't want to use it atm.
+                    //what null means that we don't want to use it atm.
                     if (((KeyboardJNativeListener) haxJorScript).indicator() != null) {
                         Keyboard.KEYBOARD_SCRIPTS.put(((KeyboardJNativeListener) haxJorScript).indicator(), haxJorScript);
                     }

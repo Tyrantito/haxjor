@@ -13,6 +13,10 @@ import static major.haxjor.HaxJor.SCRIPT_EXECUTOR;
 import static major.haxjor.HaxJorUtility.debug;
 
 /**
+ *
+ * DISCONTINUED: Since I found a better way doing this, through reversing the original avatar function
+ * and thus allowing you to modify avatar without any game interaction, this seems as a useless method to do so,
+ * though it will be still available, but limited to its current functioning. You can still produce awesome avatars.
  * Avatar script for avatar effects.
  *
  * @author Major

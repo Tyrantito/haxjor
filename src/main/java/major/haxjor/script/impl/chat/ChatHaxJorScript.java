@@ -6,11 +6,15 @@ import major.haxjor.script.HaxJorScript;
 
 /**
  * Script that automatically writes text
+ *
  * @author Major
+ * @deprecated <p>Chat rate is limited, thus, this is useless.
+ * (Reference is still available, but its design isn't completed and is inefficient; perhaps not even working)</p>
  */
 public class ChatHaxJorScript implements HaxJorScript, KeyboardJNativeListener {
 
     boolean run;
+
     @Override
     public String indicator() {
         return "Back Quote";
@@ -25,19 +29,21 @@ public class ChatHaxJorScript implements HaxJorScript, KeyboardJNativeListener {
     @Override
     public void execute() {
         System.out.println("!!");
-        if (run)return;
-        run=true;
+        if (run) return;
+        run = true;
         for (String s : TEXT) {
-            System.out.println("sending "+s);
+            System.out.println("sending " + s);
             text(s);
             pend(5);
-        }run=false;
-        
+        }
+        run = false;
+
     }
+
     /**
      * Send a simple text message.
      *
-     * @param message   the message to be sent
+     * @param message the message to be sent
      */
     protected final synchronized void text(String message) {
         //starts by 'tabbing'
@@ -123,6 +129,7 @@ public class ChatHaxJorScript implements HaxJorScript, KeyboardJNativeListener {
             "____________369369369366936",
             "____________36936936936693"
     };
+
     @Override
     public boolean enabled() {
         return true;
