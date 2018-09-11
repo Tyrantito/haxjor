@@ -14,11 +14,9 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static major.haxjor.HaxJorUtility.debug;
@@ -586,6 +584,10 @@ public final class HJSP {
                 if (HaxJorSettings.DEBUG_MESSAGES) {
                     whatWeParsed.append(workingTable.name).append(".").append(line).append("\n");
                 }
+            }
+
+            if (!workingTable.name.equals(workingTable.getFirstParent().name)) {
+                throw new HJSPSyntaxException("Table \"" + workingTable.name + "\" has not been closed.");
             }
             debug("We parsed:");
             debug(whatWeParsed.toString());
