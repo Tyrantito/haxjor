@@ -109,8 +109,8 @@ public class AvatarHaxJorScript extends HaxJorScriptSettings implements HaxJorSc
             //proper sequence
             CompletableFuture
                     .runAsync(() -> effect.start(this), SCRIPT_EXECUTOR)
-                    .thenRun(() -> effect.onEffect(this))
-                    .thenRun(() -> effect.finish(this))
+                    .thenRunAsync(() -> effect.onEffect(this), SCRIPT_EXECUTOR)
+                    .thenRunAsync(() -> effect.finish(this), SCRIPT_EXECUTOR)
                     .get();//#get should block this thread until completion to avoid concurrent operations.
         } catch (InterruptedException | ExecutionException e) {
             debug("script blocking has been interrupted.");
